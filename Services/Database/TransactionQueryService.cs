@@ -1,24 +1,20 @@
-using System.Transactions;
-using MeerkatDotnet.Database;
+using Microsoft.EntityFrameworkCore;
 
 namespace MeerkatDotnet.Services.Database;
 
 public class TransactionQueryService : IQueryService
 {
-    private AppDbContext _database;
-
-    public TransactionQueryService(AppDbContext database)
+    public TransactionQueryService()
     {
-        _database = database;
     }
 
-    public async Task<T> ExecuteQueryAsync<T>(Query<T> query)
+    public async Task<T> ExecuteQueryAsync<T>(DbContext context, Query<T> query)
     {
-        using (var transaction = await _database.Database.BeginTransactionAsync())
+        using (var transaction = await context.Database.BeginTransactionAsync())
         {
             try
             {
-                var result = await query(_database);
+                var result = await query();
                 await transaction.CommitAsync();
                 return result;
             }

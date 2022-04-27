@@ -30,8 +30,8 @@ public class UserModel
     [Column("phone")]
     public string? Phone { get; set; }
 
-    [Column("refresh_tokens")]
-    public List<RefreshTokenModel>? RefreshTokens { get; set; }
+    // [Column("refresh_tokens")]
+    // public List<RefreshTokenModel>? RefreshTokens { get; set; }
 
     public UserModel(string username, string passwordHash)
     {
@@ -47,6 +47,18 @@ public class UserModel
         Phone = phone;
     }
 
+    public UserModel Clone()
+    {
+        return new UserModel(
+            username: Username,
+            passwordHash: PasswordHash,
+            email: Email,
+            phone: Phone)
+        {
+            Id = this.Id
+        };
+    }
+
     public static implicit operator UserOutputModel(UserModel user)
     {
         return new(
@@ -56,4 +68,5 @@ public class UserModel
             Phone: user.Phone
         );
     }
+
 }

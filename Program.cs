@@ -9,9 +9,9 @@ var builder = WebApplication.CreateBuilder(args);
 var config = builder.Configuration;
 
 // Load JWT options from config
-var jwtOptions = new JwtOptions();
-config.Bind(config);
+JwtOptions jwtOptions = new();
 builder.Services.Configure<JwtOptions>(config);
+config.Bind("JwtOptions", jwtOptions);
 
 // Load hashing options from config
 builder.Services.Configure<HashingOptions>(config);
