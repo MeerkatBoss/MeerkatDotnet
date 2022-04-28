@@ -34,12 +34,12 @@ public sealed class UsersQuery : IUsersQuery
         return user.Clone();
     }
 
-    public async Task<UserModel?> GetUserAsync(int id)
+    public Task<UserModel?> GetUserAsync(int id)
     {
         CodeContract.Requires<ArgumentOutOfRangeException>(
             id > 0,
             "Id must be a positive integer");
-        return await _database.Users.AsNoTracking()
+        return _database.Users.AsNoTracking()
             .Where(u => u.Id == id)
             .FirstOrDefaultAsync();
     }
@@ -95,25 +95,30 @@ public sealed class UsersQuery : IUsersQuery
     //     return Convert.ToBase64String(bytes);
     // }
 
-    private async Task<bool> UsernameAvailable(string username)
+    private Task<bool> UsernameAvailable(string username)
     {
-        return await _database.Users
+        return _database.Users
                 .Where(u => u.Username == username)
-                .FirstOrDefaultAsync() is null;
+                .FirstOrDefaultAsync()
+                .ContinueWith(t => t.Result is null);
     }
 
-    private async Task<bool> UsernameAvailable(int id, string username)
+    private Task<bool> UsernameAvailable(int id, string username)
     {
-        return await _database.Users
+        return _database.Users
             .Where(u => u.Id != id && u.Username == username)
-            .FirstOrDefaultAsync() is null;
+            .FirstOrDefaultAsync()
+            .ContinueWith(t => t.Result is null);
     }
 
-    private async Task<bool> UserExists(int id)
+    private Task<bool> UserExists(int id)
     {
         CodeContract.Requires<ArgumentOutOfRangeException>(
             id > 0,
             "Id must be a positive integer");
-        return await _database.Users.FindAsync(id) is not null;
+        return _database.Users
+            .FindAsync(id)
+            .AsTask()
+            .ContinueWith(t => t.Result is not null);
     }
 }
