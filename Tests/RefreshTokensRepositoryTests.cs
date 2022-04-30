@@ -8,28 +8,16 @@ using NUnit.Framework;
 namespace MeerkatDotnet.Tests;
 
 [TestFixture]
-public class RefreshTokensQueryTests
+public class RefreshTokensRepositoryTests
 {
     private static readonly UserModel defaultUser = new(
         username: "test",
         passwordHash: "test"
     );
 
-    // private static readonly RefreshTokenModel defaultToken = new(
-    //     value: "test",
-    //     userId: -1,
-    //     expirationDate: DateTime.Today.ToUniversalTime().AddDays(7)
-    // );
-
-    // private static readonly RefreshTokenModel alternativeToken = new(
-    //     value: "test",
-    //     userId: -1,
-    //     expirationDate: DateTime.Today.ToUniversalTime().AddDays(7)
-    // );
-
     private readonly DbContextOptions<AppDbContext> _options;
 
-    public RefreshTokensQueryTests()
+    public RefreshTokensRepositoryTests()
     {
         var builder = WebApplication.CreateBuilder();
         var config = builder.Configuration;
@@ -66,7 +54,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -92,7 +80,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -118,7 +106,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -146,7 +134,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -170,7 +158,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -194,7 +182,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -221,7 +209,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -242,7 +230,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -264,7 +252,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -287,7 +275,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -308,7 +296,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -331,7 +319,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -353,7 +341,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -376,7 +364,7 @@ public class RefreshTokensQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var tokensQuery = new RefreshTokensQuery(context);
+            var tokensQuery = new RefreshTokensRepository(context);
             context.Database.BeginTransaction();
             try
             {

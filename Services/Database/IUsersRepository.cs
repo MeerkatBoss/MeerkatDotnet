@@ -2,7 +2,7 @@ using MeerkatDotnet.Database.Models;
 
 namespace MeerkatDotnet.Services.Database;
 
-public interface IUsersQuery
+public interface IUsersRepository
 {
     /// <summary>
     /// Creates a user in database based on input model

@@ -10,11 +10,11 @@ namespace MeerkatDotnet.Services.Database;
 /// <summary>
 /// Class containing basic queries for "users" table in database
 /// </summary>
-public sealed class UsersQuery : IUsersQuery
+public sealed class UsersRepository : IUsersRepository
 {
     private AppDbContext _database;
 
-    public UsersQuery(AppDbContext database)
+    public UsersRepository(AppDbContext database)
     {
         _database = database;
     }

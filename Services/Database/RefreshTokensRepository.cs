@@ -6,11 +6,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MeerkatDotnet.Services.Database;
 
-public class RefreshTokensQuery : IRefreshTokensService
+public class RefreshTokensRepository : IRefreshTokensRepository
 {
     private readonly AppDbContext _context;
 
-    public RefreshTokensQuery(AppDbContext context)
+    public RefreshTokensRepository(AppDbContext context)
     {
         _context = context;
     }

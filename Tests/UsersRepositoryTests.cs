@@ -8,7 +8,7 @@ using MeerkatDotnet.Database.Models;
 namespace MeerkatDotnet.Tests;
 
 [TestFixture]
-public class UsersQueryTests
+public class UsersRepositoryTests
 {
     private static readonly UserModel defaultUser = new(
         username: "test",
@@ -20,7 +20,7 @@ public class UsersQueryTests
     );
     private static readonly DbContextOptions<AppDbContext> _options;
 
-    static UsersQueryTests()
+    static UsersRepositoryTests()
     {
         var builder = WebApplication.CreateBuilder();
         var config = builder.Configuration;
@@ -37,7 +37,7 @@ public class UsersQueryTests
         {
             context.Database.BeginTransaction();
             var userModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             try
             {
                 var addedUser = await usersQuery.AddUserAsync(userModel);
@@ -61,7 +61,7 @@ public class UsersQueryTests
         {
             var userModel1 = defaultUser.Clone();
             var userModel2 = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -83,7 +83,7 @@ public class UsersQueryTests
         using (var context = new AppDbContext(_options))
         {
             var userModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -107,7 +107,7 @@ public class UsersQueryTests
         using (var context = new AppDbContext(_options))
         {
             var userModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -128,7 +128,7 @@ public class UsersQueryTests
     {
         using (var context = new AppDbContext(_options))
         {
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
 
             try
@@ -151,7 +151,7 @@ public class UsersQueryTests
         using (var context = new AppDbContext(_options))
         {
             var userModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -181,7 +181,7 @@ public class UsersQueryTests
                 email: "meerkat@meerkatboss.com",
                 phone: null
             );
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -212,7 +212,7 @@ public class UsersQueryTests
                 email: userModel1.Email,
                 phone: userModel1.Phone
             );
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -243,7 +243,7 @@ public class UsersQueryTests
                 email: userModel.Email,
                 phone: userModel.Phone
             );
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -267,7 +267,7 @@ public class UsersQueryTests
         using (var context = new AppDbContext(_options))
         {
             var updateModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -289,7 +289,7 @@ public class UsersQueryTests
         using (var context = new AppDbContext(_options))
         {
             var userModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -312,7 +312,7 @@ public class UsersQueryTests
         using (var context = new AppDbContext(_options))
         {
             var userModel = defaultUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {
@@ -337,7 +337,7 @@ public class UsersQueryTests
         {
             var userModel = defaultUser.Clone();
             var updateModel = alternativeUser.Clone();
-            var usersQuery = new UsersQuery(context);
+            var usersQuery = new UsersRepository(context);
             context.Database.BeginTransaction();
             try
             {

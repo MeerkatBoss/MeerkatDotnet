@@ -2,7 +2,7 @@ using MeerkatDotnet.Database.Models;
 
 namespace MeerkatDotnet.Services.Database;
 
-public interface IRefreshTokensService
+public interface IRefreshTokensRepository
 {
 
     /// <summary>
