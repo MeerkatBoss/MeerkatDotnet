@@ -24,7 +24,7 @@ public sealed class UsersRepository : IUsersRepository
         CodeContract.Requires<UsernameTakenException>(
             await UsernameAvailable(user.Username),
             String.Format(
-                "Username \"{0}\" is already taken",
+                "Cannot add user with username=\"{0}\": username is already taken",
                 user.Username
             )
         );
@@ -38,7 +38,10 @@ public sealed class UsersRepository : IUsersRepository
     {
         CodeContract.Requires<ArgumentOutOfRangeException>(
             id > 0,
-            "Id must be a positive integer");
+            String.Format(
+                "Cannot get user with id={0}: id must be a positive integer",
+                id
+            ));
         return _database.Users.AsNoTracking()
             .Where(u => u.Id == id)
             .FirstOrDefaultAsync();
@@ -54,14 +57,23 @@ public sealed class UsersRepository : IUsersRepository
 
     public async Task<UserModel> UpdateUserAsync(UserModel user)
     {
+        CodeContract.Requires<ArgumentOutOfRangeException>(
+            user.Id > 0,
+            String.Format(
+                "Cannot update user with id={0}: id must be a positive integer",
+                user.Id
+            )
+        );
         CodeContract.Requires<UserNotFoundException>(
             await UserExists(user.Id),
-            String.Format("User with id={0} was not found", user.Id)
+            String.Format(
+                "Cannot update user with id={0}: no such user",
+                user.Id)
         );
         CodeContract.Requires<UsernameTakenException>(
             await UsernameAvailable(user.Id, user.Username),
             String.Format(
-                "Username \"{0}\" is already taken",
+                "Cannot update user with username=\"{0}\": username is already taken",
                 user.Username
             )
         );
@@ -74,11 +86,21 @@ public sealed class UsersRepository : IUsersRepository
 
     public async Task DeleteUserAsync(int id)
     {
+        CodeContract.Requires<ArgumentOutOfRangeException>(
+            id > 0,
+            String.Format(
+                "Cannot delete user with id={0}: id must be a positive integer",
+                id
+            )
+        );
         CodeContract.Requires<UserNotFoundException>(
             await UserExists(id),
-            String.Format("User with id={0} was not found", id)
+            String.Format(
+                "Cannot delete user with id={0}: no such user",
+                id
+            )
         );
-        UserModel user = (await GetUserAsync(id))!;
+        UserModel user = (await _database.Users.FindAsync(id))!;
         _database.Users.Remove(user);
         await _database.SaveChangesAsync();
     }
@@ -113,9 +135,6 @@ public sealed class UsersRepository : IUsersRepository
 
     private Task<bool> UserExists(int id)
     {
-        CodeContract.Requires<ArgumentOutOfRangeException>(
-            id > 0,
-            "Id must be a positive integer");
         return _database.Users
             .FindAsync(id)
             .AsTask()
