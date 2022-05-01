@@ -1,11 +1,11 @@
 using MeerkatDotnet.Configurations;
 using MeerkatDotnet.Database;
 using MeerkatDotnet.Database.Models;
-using MeerkatDotnet.Services.Database.Exceptions;
 using MeerkatDotnet.Contracts;
 using Microsoft.EntityFrameworkCore;
+using MeerkatDotnet.Repositories.Exceptions;
 
-namespace MeerkatDotnet.Services.Database;
+namespace MeerkatDotnet.Repositories;
 
 /// <summary>
 /// Class containing basic queries for "users" table in database

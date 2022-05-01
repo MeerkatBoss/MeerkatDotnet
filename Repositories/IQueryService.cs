@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace MeerkatDotnet.Services.Database;
+namespace MeerkatDotnet.Repositories;
 
 /// <summary>
 /// Represents asynchronous query to the database

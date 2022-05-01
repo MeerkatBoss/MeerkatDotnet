@@ -1,6 +1,6 @@
 using MeerkatDotnet.Database.Models;
 
-namespace MeerkatDotnet.Services.Database;
+namespace MeerkatDotnet.Repositories;
 
 public interface IRefreshTokensRepository
 {

@@ -1,9 +1,9 @@
 using NUnit.Framework;
 using Microsoft.EntityFrameworkCore;
 using MeerkatDotnet.Database;
-using MeerkatDotnet.Services.Database;
-using MeerkatDotnet.Services.Database.Exceptions;
 using MeerkatDotnet.Database.Models;
+using MeerkatDotnet.Repositories;
+using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Tests;
 

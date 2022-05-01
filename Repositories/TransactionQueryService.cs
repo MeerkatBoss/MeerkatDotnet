@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
-namespace MeerkatDotnet.Services.Database;
+namespace MeerkatDotnet.Repositories;
 
 public class TransactionQueryService : IQueryService
 {

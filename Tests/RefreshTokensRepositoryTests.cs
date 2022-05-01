@@ -1,7 +1,7 @@
 using MeerkatDotnet.Database;
 using MeerkatDotnet.Database.Models;
-using MeerkatDotnet.Services.Database;
-using MeerkatDotnet.Services.Database.Exceptions;
+using MeerkatDotnet.Repositories;
+using MeerkatDotnet.Repositories.Exceptions;
 using Microsoft.EntityFrameworkCore;
 using NUnit.Framework;
 

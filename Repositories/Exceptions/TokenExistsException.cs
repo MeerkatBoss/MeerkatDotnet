@@ -1,6 +1,6 @@
 using System.Runtime.Serialization;
 
-namespace MeerkatDotnet.Services.Database.Exceptions;
+namespace MeerkatDotnet.Repositories.Exceptions;
 
 public class TokenExistsException : System.Exception
 {

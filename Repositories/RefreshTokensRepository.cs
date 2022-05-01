@@ -1,10 +1,10 @@
 using MeerkatDotnet.Contracts;
 using MeerkatDotnet.Database;
 using MeerkatDotnet.Database.Models;
-using MeerkatDotnet.Services.Database.Exceptions;
+using MeerkatDotnet.Repositories.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
-namespace MeerkatDotnet.Services.Database;
+namespace MeerkatDotnet.Repositories;
 
 public class RefreshTokensRepository : IRefreshTokensRepository
 {

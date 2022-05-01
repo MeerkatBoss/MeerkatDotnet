@@ -2,7 +2,7 @@ using MeerkatDotnet.Database;
 using MeerkatDotnet.Configurations;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using MeerkatDotnet.Services.Database;
+using MeerkatDotnet.Repositories;
 
 var builder = WebApplication.CreateBuilder(args);
 
