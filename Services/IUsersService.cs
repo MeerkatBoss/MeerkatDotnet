@@ -4,6 +4,9 @@ using MeerkatDotnet.Models.Responses;
 
 namespace MeerkatDotnet.Services;
 
+/// <summary>
+/// Service for managing users and their authentication
+/// </summary>
 public interface IUsersService
 {
     /// <summary>
@@ -11,39 +14,39 @@ public interface IUsersService
     /// </summary>
     /// <param name="inputModel">Input model for user</param>
     /// <returns>A pair of tokens and a user model</returns>
-    public Task<LogInResponse> SignUpUserAsync(UserInputModel inputModel);
+    Task<LogInResponse> SignUpUserAsync(UserInputModel inputModel);
 
     /// <summary>
     /// Logs in user based on request
     /// </summary>
     /// <param name="request">Request containing login and password</param>
     /// <returns>A pair of tokens and a user model</returns>
-    public Task<LogInResponse> LogInUserAsync(LogInRequest request);
+    Task<LogInResponse> LogInUserAsync(LogInRequest request);
 
     /// <summary>
     /// Retrives information about user with specified id
     /// </summary>
     /// <param name="id">Id of a user</param>
     /// <returns>User model</returns>
-    public Task<UserOutputModel> GetUserAsync(int id);
+    Task<UserOutputModel> GetUserAsync(int id);
 
     /// <summary>
     /// Updates user based on update model
     /// </summary>
     /// <param name="updateModel">Update model for user</param>
     /// <returns>Updated user model</returns>
-    public Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel);
+    Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel);
 
     /// <summary>
     /// Deletes user with specified id
     /// </summary>
     /// <param name="id">Id of a user</param>
-    public Task DeleteUserAsync(int id);
+    Task DeleteUserAsync(int id);
 
     /// <summary>
     /// Issues a new pair of tokens based on an old one
     /// </summary>
     /// <param name="request">Request containing old pair of tokens</param>
     /// <returns>New pair of tokens</returns>
-    public Task<RefreshResponse> RefreshTokens(RefreshRequest request);
+    Task<RefreshResponse> RefreshTokens(RefreshRequest request);
 }

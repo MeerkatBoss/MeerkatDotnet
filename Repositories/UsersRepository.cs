@@ -7,9 +7,6 @@ using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Repositories;
 
-/// <summary>
-/// Class containing basic queries for "users" table in database
-/// </summary>
 public sealed class UsersRepository : IUsersRepository
 {
     private AppDbContext _database;

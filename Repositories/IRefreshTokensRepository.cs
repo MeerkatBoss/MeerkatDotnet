@@ -2,6 +2,9 @@ using MeerkatDotnet.Database.Models;
 
 namespace MeerkatDotnet.Repositories;
 
+/// <summary>
+/// Repository for managing "tokens" table in database
+/// </summary>
 public interface IRefreshTokensRepository
 {
 
@@ -32,7 +35,6 @@ public interface IRefreshTokensRepository
     /// Removes token with specified id from database
     /// </summary>
     /// <param name="tokenId">Id of a token</param>
-    /// <returns></returns>
     Task DeleteTokenAsync(int tokenId);
 
 }

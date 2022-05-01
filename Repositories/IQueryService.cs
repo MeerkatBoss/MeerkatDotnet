@@ -8,7 +8,7 @@ namespace MeerkatDotnet.Repositories;
 public delegate Task<T> Query<T>(IRepositoryContext context);
 
 /// <summary>
-/// Represents abstract wrapper for queries against repository
+/// Wrapper for queries against repository
 /// </summary>
 public interface IRepositoryAccessor
 {

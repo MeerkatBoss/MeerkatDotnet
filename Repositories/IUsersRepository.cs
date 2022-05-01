@@ -2,6 +2,9 @@ using MeerkatDotnet.Database.Models;
 
 namespace MeerkatDotnet.Repositories;
 
+/// <summary>
+/// Repository for managing "users" table in database
+/// </summary>
 public interface IUsersRepository
 {
     /// <summary>
