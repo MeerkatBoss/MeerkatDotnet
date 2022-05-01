@@ -50,7 +50,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-builder.Services.AddScoped<IQueryService, TransactionQueryService>();
+builder.Services.AddScoped<IRepositoryAccessor, RepositoryAccessor>();
 builder.Services.AddScoped<IUsersRepository, UsersRepository>();
 builder.Services.AddScoped<IRefreshTokensRepository, RefreshTokensRepository>();
 

@@ -1,28 +1,27 @@
-using Microsoft.EntityFrameworkCore;
-
 namespace MeerkatDotnet.Repositories;
 
-public class TransactionQueryService : IQueryService
+public class RepositoryAccessor : IRepositoryAccessor
 {
-    public TransactionQueryService()
+    private readonly IRepositoryContext _context;
+
+    public RepositoryAccessor(IRepositoryContext context)
     {
+        _context = context;
     }
 
-    public async Task<T> ExecuteQueryAsync<T>(DbContext context, Query<T> query)
+    public async Task<T> ExecuteQueryAsync<T>(Query<T> query)
     {
-        using (var transaction = await context.Database.BeginTransactionAsync())
+        await _context.BeginTransactionAsync();
+        try
         {
-            try
-            {
-                var result = await query();
-                await transaction.CommitAsync();
-                return result;
-            }
-            catch
-            {
-                await transaction.RollbackAsync();
-                throw;
-            }
+            var result = await query(_context);
+            await _context.CommitTransactionAsync();
+            return result;
+        }
+        catch
+        {
+            await _context.RollbackTransactionAsync();
+            throw;
         }
     }
 }
