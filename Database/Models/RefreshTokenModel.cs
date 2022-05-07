@@ -5,11 +5,11 @@ namespace MeerkatDotnet.Database.Models;
 [Table("tokens")]
 public class RefreshTokenModel
 {
-    [Key]
-    [Column("id")]
-    public int Id { get; private set; }
+    // [Key]
+    // [Column("id")]
+    // public int Id { get; private set; }
 
-    [Required]
+    [Key]
     [Column("value")]
     public string Value { get; private set; } = null!;
 
@@ -44,7 +44,7 @@ public class RefreshTokenModel
             expirationDate: ExpirationDate
         )
         {
-            Id = this.Id,
+            // Id = this.Id,
             User = this.User?.Clone()
         };
     }

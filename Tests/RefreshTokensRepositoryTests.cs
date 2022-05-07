@@ -62,8 +62,8 @@ public class RefreshTokensRepositoryTests
                 var token = GetDefaultToken(user.Id);
                 RefreshTokenModel addedToken = await tokensQuery.AddTokenAsync(token);
 
-                Assert.AreEqual((int)default, token.Id);
-                Assert.AreNotEqual((int)default, addedToken.Id);
+                // Assert.AreEqual((int)default, token.Id);
+                // Assert.AreNotEqual((int)default, addedToken.Id);
                 Assert.AreEqual(token.Value, addedToken.Value);
                 Assert.AreEqual(token.UserId, addedToken.UserId);
                 Assert.AreEqual(token.ExpirationDate, addedToken.ExpirationDate);
@@ -86,8 +86,8 @@ public class RefreshTokensRepositoryTests
             {
                 UserModel user = await AddDefaultUserAsync(context);
                 var token = GetDefaultToken(user.Id);
-                int id = (await tokensQuery.AddTokenAsync(token)).Id;
-                RefreshTokenModel? testToken = await tokensQuery.GetTokenAsync(id);
+                await tokensQuery.AddTokenAsync(token);
+                RefreshTokenModel? testToken = await tokensQuery.GetTokenAsync(token.Value);
 
                 Assert.NotNull(testToken);
                 Assert.AreEqual(token.Value, testToken!.Value);
@@ -140,9 +140,9 @@ public class RefreshTokensRepositoryTests
             {
                 UserModel user = await AddDefaultUserAsync(context);
                 RefreshTokenModel token = GetDefaultToken(user.Id);
-                int id = (await tokensQuery.AddTokenAsync(token)).Id;
+                await tokensQuery.AddTokenAsync(token);
                 AsyncTestDelegate deleteUser =
-                    async () => await tokensQuery.DeleteTokenAsync(id);
+                    async () => await tokensQuery.DeleteTokenAsync(token.Value);
 
                 Assert.DoesNotThrowAsync(deleteUser);
             }
@@ -202,49 +202,6 @@ public class RefreshTokensRepositoryTests
                 context.Database.RollbackTransaction();
             }
         }
-    }
-
-    [Test]
-    public void TestGetTokenInvalidId()
-    {
-        using (var context = new AppDbContext(_options))
-        {
-            var tokensQuery = new RefreshTokensRepository(context);
-            context.Database.BeginTransaction();
-            try
-            {
-                AsyncTestDelegate getToken =
-                    async () => await tokensQuery.GetTokenAsync(-1);
-
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(getToken);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
-            }
-        }
-    }
-
-    [Test]
-    public void TestDeleteTokenInvalidId()
-    {
-        using (var context = new AppDbContext(_options))
-        {
-            var tokensQuery = new RefreshTokensRepository(context);
-            context.Database.BeginTransaction();
-            try
-            {
-                AsyncTestDelegate deleteToken =
-                    async () => await tokensQuery.DeleteTokenAsync(-1);
-
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(deleteToken);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
-            }
-        }
-
     }
 
     [Test]
@@ -337,7 +294,7 @@ public class RefreshTokensRepositoryTests
     }
 
     [Test]
-    public async Task TestGetUserWrongId()
+    public async Task TestGetUserWrongValue()
     {
         using (var context = new AppDbContext(_options))
         {
@@ -347,8 +304,8 @@ public class RefreshTokensRepositoryTests
             {
                 UserModel user = await AddDefaultUserAsync(context);
                 RefreshTokenModel token = GetDefaultToken(user.Id);
-                RefreshTokenModel addedToken = await tokensQuery.AddTokenAsync(token);
-                RefreshTokenModel? getToken = await tokensQuery.GetTokenAsync(addedToken.Id + 10);
+                await tokensQuery.AddTokenAsync(token);
+                RefreshTokenModel? getToken = await tokensQuery.GetTokenAsync(token.Value + "_wrong");
 
                 Assert.IsNull(getToken);
             }
@@ -360,7 +317,7 @@ public class RefreshTokensRepositoryTests
     }
 
     [Test]
-    public async Task TestDeleteUserWrongId()
+    public async Task TestDeleteUserWrongValue()
     {
         using (var context = new AppDbContext(_options))
         {
@@ -370,9 +327,9 @@ public class RefreshTokensRepositoryTests
             {
                 UserModel user = await AddDefaultUserAsync(context);
                 RefreshTokenModel token = GetDefaultToken(user.Id);
-                RefreshTokenModel addedToken = await tokensQuery.AddTokenAsync(token);
+                await tokensQuery.AddTokenAsync(token);
                 AsyncTestDelegate deleteToken =
-                    async () => await tokensQuery.DeleteTokenAsync(addedToken.Id + 10);
+                    async () => await tokensQuery.DeleteTokenAsync(token.Value + "_wrong");
 
                 Assert.ThrowsAsync<TokenNotFoundException>(deleteToken);
             }

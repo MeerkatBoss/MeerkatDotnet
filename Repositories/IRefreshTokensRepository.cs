@@ -19,9 +19,9 @@ public interface IRefreshTokensRepository
     /// Retrives token with the specified id.
     /// If no such token found, returns null
     /// </summary>
-    /// <param name="tokenId">Id of a token</param>
+    /// <param name="token">value of a token</param>
     /// <returns>Retrived token or null</returns>
-    Task<RefreshTokenModel?> GetTokenAsync(int tokenId);
+    Task<RefreshTokenModel?> GetTokenAsync(string token);
 
     /// <summary>
     /// Retrives all tokens of a user
@@ -34,7 +34,7 @@ public interface IRefreshTokensRepository
     /// <summary>
     /// Removes token with specified id from database
     /// </summary>
-    /// <param name="tokenId">Id of a token</param>
-    Task DeleteTokenAsync(int tokenId);
+    /// <param name="token">value of a token</param>
+    Task DeleteTokenAsync(string token);
 
 }

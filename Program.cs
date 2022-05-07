@@ -50,9 +50,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     });
 builder.Services.AddAuthorization();
 
-builder.Services.AddScoped<IRepositoryAccessor, RepositoryAccessor>();
 builder.Services.AddScoped<IUsersRepository, UsersRepository>();
 builder.Services.AddScoped<IRefreshTokensRepository, RefreshTokensRepository>();
+builder.Services.AddScoped<IRepositoryContext, RepositoryContext>();
 
 var app = builder.Build();
 
