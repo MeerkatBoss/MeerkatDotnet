@@ -102,18 +102,6 @@ public sealed class UsersRepository : IUsersRepository
         await _database.SaveChangesAsync();
     }
 
-    // private string GetHash(string password)
-    // {
-    //     byte[] bytes = KeyDerivation.Pbkdf2(
-    //         password: password,
-    //         salt: _hashingOptions.SaltBytes,
-    //         prf: KeyDerivationPrf.HMACSHA256,
-    //         iterationCount: _hashingOptions.IterationCount,
-    //         numBytesRequested: 256
-    //     );
-    //     return Convert.ToBase64String(bytes);
-    // }
-
     private Task<bool> UsernameAvailable(string username)
     {
         return _database.Users

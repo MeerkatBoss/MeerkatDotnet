@@ -3,11 +3,12 @@ using Microsoft.EntityFrameworkCore.Storage;
 
 namespace MeerkatDotnet.Repositories;
 
-public class RepositoryContext : IRepositoryContext
+public class RepositoryContext : IRepositoryContext, IDisposable
 {
     private readonly AppDbContext _dbContext;
 
-    private IDbContextTransaction? _transaction = null!;
+    private IDbContextTransaction? _transaction = null;
+    private bool disposedValue;
 
     public IUsersRepository Users { get; init; }
 
@@ -41,6 +42,8 @@ public class RepositoryContext : IRepositoryContext
         if (_transaction is not null)
         {
             await _transaction.CommitAsync();
+            await _transaction.DisposeAsync();
+            _transaction = null;
         }
         else
             throw new InvalidOperationException(
@@ -53,11 +56,36 @@ public class RepositoryContext : IRepositoryContext
         if (_transaction is not null)
         {
             await _transaction.RollbackAsync();
+            await _transaction.DisposeAsync();
+            _transaction = null;
         }
         else
             throw new InvalidOperationException(
                 "Cannot rollback transaction: transaction was not started"
             );
 
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!disposedValue)
+        {
+            if (disposing)
+            {
+                if (_transaction is not null)
+                {
+                    _transaction.Dispose();
+                    _transaction = null;
+                }
+            }
+
+            disposedValue = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }
