@@ -10,15 +10,15 @@ namespace MeerkatDotnet.Tests;
 [TestFixture]
 public class UsersRepositoryTests
 {
-    private static readonly UserModel defaultUser = new(
+    protected static readonly UserModel defaultUser = new(
         username: "test",
         passwordHash: "test"
     );
-    private static readonly UserModel alternativeUser = new(
+    protected static readonly UserModel alternativeUser = new(
         username: "test_alt",
         passwordHash: "test"
     );
-    private readonly DbContextOptions<AppDbContext> _options;
+    protected readonly DbContextOptions<AppDbContext> _options;
 
     public UsersRepositoryTests()
     {
@@ -30,462 +30,493 @@ public class UsersRepositoryTests
             .Options;
     }
 
-    [Test]
-    public async Task TestAddUser()
+    [TestFixture]
+    public class AddUserTests : UsersRepositoryTests
     {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestAddUser()
         {
-            context.Database.BeginTransaction();
-            var userModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var addedUser = await usersQuery.AddUserAsync(userModel);
+                context.Database.BeginTransaction();
+                var userModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                try
+                {
+                    var addedUser = await usersQuery.AddUserAsync(userModel);
 
-                Assert.AreEqual(userModel.Username, addedUser.Username);
-                Assert.Greater(userModel.Id, 0);
-                Assert.IsNull(addedUser.Email);
-                Assert.IsNull(addedUser.Phone);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.AreEqual(userModel.Username, addedUser.Username);
+                    Assert.Greater(userModel.Id, 0);
+                    Assert.IsNull(addedUser.Email);
+                    Assert.IsNull(addedUser.Phone);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestAddUserDuplicate()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestAddUserDuplicate()
         {
-            var userModel1 = defaultUser.Clone();
-            var userModel2 = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                await usersQuery.AddUserAsync(userModel1);
-                AsyncTestDelegate addUser = async () => await usersQuery.AddUserAsync(userModel2);
+                var userModel1 = defaultUser.Clone();
+                var userModel2 = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    await usersQuery.AddUserAsync(userModel1);
+                    AsyncTestDelegate addUser = async () => await usersQuery.AddUserAsync(userModel2);
 
-                Assert.ThrowsAsync<UsernameTakenException>(addUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.ThrowsAsync<UsernameTakenException>(addUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestAddUserImmutable()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestAddUserImmutable()
         {
-            var userModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var user = await usersQuery.AddUserAsync(userModel);
-                user.Username = "other_name";
-                var user2 = await usersQuery.GetUserAsync(user.Id);
+                var userModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var user = await usersQuery.AddUserAsync(userModel);
+                    user.Username = "other_name";
+                    var user2 = await usersQuery.GetUserAsync(user.Id);
 
-                Assert.AreEqual(userModel.Username, user2!.Username);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.AreEqual(userModel.Username, user2!.Username);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
+
     }
 
-    [Test]
-    public async Task TestGetUser()
+    [TestFixture]
+    public class GetUserTests : UsersRepositoryTests
     {
-        using (var context = new AppDbContext(_options))
-        {
-            var userModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
-            {
-                var addedUser = await usersQuery.AddUserAsync(userModel);
-                var user = await usersQuery.GetUserAsync(addedUser.Id);
 
-                Assert.IsNotNull(user);
-                Assert.AreEqual(user!.Username, addedUser.Username);
-                Assert.AreEqual(user!.PasswordHash, addedUser.PasswordHash);
-            }
-            finally
+
+        [Test]
+        public async Task TestGetUser()
+        {
+            using (var context = new AppDbContext(_options))
             {
-                context.Database.RollbackTransaction();
+                var userModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var addedUser = await usersQuery.AddUserAsync(userModel);
+                    var user = await usersQuery.GetUserAsync(addedUser.Id);
+
+                    Assert.IsNotNull(user);
+                    Assert.AreEqual(user!.Username, addedUser.Username);
+                    Assert.AreEqual(user!.PasswordHash, addedUser.PasswordHash);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestGetWrongUser()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestGetWrongUser()
         {
-            var userModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var addedUser = await usersQuery.AddUserAsync(userModel);
-                var user = await usersQuery.GetUserAsync(addedUser.Id + 10);
+                var userModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var addedUser = await usersQuery.AddUserAsync(userModel);
+                    var user = await usersQuery.GetUserAsync(addedUser.Id + 10);
 
-                Assert.IsNull(user);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.IsNull(user);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public void TestGetUserInvalidId()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public void TestGetUserInvalidId()
         {
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-
-            try
+            using (var context = new AppDbContext(_options))
             {
-                AsyncTestDelegate getUser =
-                    async () => await usersQuery.GetUserAsync(-1);
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
 
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(getUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                try
+                {
+                    AsyncTestDelegate getUser =
+                        async () => await usersQuery.GetUserAsync(-1);
+
+                    Assert.ThrowsAsync<ArgumentOutOfRangeException>(getUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestGetUserImmutable()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestGetUserImmutable()
         {
-            var userModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var id = (await usersQuery.AddUserAsync(userModel)).Id;
-                var user1 = await usersQuery.GetUserAsync(id);
-                user1!.Username = "other_name";
-                var user2 = await usersQuery.GetUserAsync(id);
+                var userModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var id = (await usersQuery.AddUserAsync(userModel)).Id;
+                    var user1 = await usersQuery.GetUserAsync(id);
+                    user1!.Username = "other_name";
+                    var user2 = await usersQuery.GetUserAsync(id);
 
-                Assert.AreEqual(userModel.Username, user2!.Username);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.AreEqual(userModel.Username, user2!.Username);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
+
+
     }
 
-    [Test]
-    public async Task TestLoginUser()
+    [TestFixture]
+    public class LoginUserTests : UsersRepositoryTests
     {
-        using (var context = new AppDbContext(_options))
-        {
-            var userModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
-            {
-                await usersQuery.AddUserAsync(userModel);
-                var user = await usersQuery.LoginUserAsync(
-                    userModel.Username, userModel.PasswordHash);
 
-                Assert.NotNull(user);
-                Assert.AreEqual(user!.Username, userModel.Username);
-            }
-            finally
+        [Test]
+        public async Task TestLoginUser()
+        {
+            using (var context = new AppDbContext(_options))
             {
-                context.Database.RollbackTransaction();
+                var userModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    await usersQuery.AddUserAsync(userModel);
+                    var user = await usersQuery.LoginUserAsync(
+                        userModel.Username, userModel.PasswordHash);
+
+                    Assert.NotNull(user);
+                    Assert.AreEqual(user!.Username, userModel.Username);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestLoginUserWrongLogin()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestLoginUserWrongLogin()
         {
-            var usersRepository = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                UserModel? user = await usersRepository.LoginUserAsync("test", "test");
+                var usersRepository = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    UserModel? user = await usersRepository.LoginUserAsync("test", "test");
 
-                Assert.IsNull(user);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.IsNull(user);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestLoginUserWrongPassword()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestLoginUserWrongPassword()
         {
-            var usersRepository = new UsersRepository(context);
-            var userModel = defaultUser.Clone();
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                await usersRepository.AddUserAsync(userModel);
-                UserModel? user = await usersRepository.LoginUserAsync(userModel.Username, "wrong_password");
+                var usersRepository = new UsersRepository(context);
+                var userModel = defaultUser.Clone();
+                context.Database.BeginTransaction();
+                try
+                {
+                    await usersRepository.AddUserAsync(userModel);
+                    UserModel? user = await usersRepository.LoginUserAsync(userModel.Username, "wrong_password");
 
-                Assert.IsNull(user);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.IsNull(user);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
+
     }
 
-    [Test]
-    public async Task TestUpdateUser()
+    [TestFixture]
+    public class UpdateUserTest : UsersRepositoryTests
     {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestUpdateUser()
         {
-            var userModel = defaultUser.Clone();
-            var updateModel = new UserModel(
-                username: userModel.Username,
-                passwordHash: userModel.PasswordHash,
-                email: "meerkat@meerkatboss.com",
-                phone: null
-            );
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var addedUser = await usersQuery.AddUserAsync(userModel);
-                updateModel.Id = userModel.Id;
-                var result = await usersQuery.UpdateUserAsync(updateModel);
+                var userModel = defaultUser.Clone();
+                var updateModel = new UserModel(
+                    username: userModel.Username,
+                    passwordHash: userModel.PasswordHash,
+                    email: "meerkat@meerkatboss.com",
+                    phone: null
+                );
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var addedUser = await usersQuery.AddUserAsync(userModel);
+                    updateModel.Id = userModel.Id;
+                    var result = await usersQuery.UpdateUserAsync(updateModel);
 
-                Assert.AreEqual(result.Username, userModel.Username);
-                Assert.AreEqual(result.Email, updateModel.Email);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.AreEqual(result.Username, userModel.Username);
+                    Assert.AreEqual(result.Email, updateModel.Email);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestUpdateUserExistingName()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestUpdateUserExistingName()
         {
-            var userModel1 = defaultUser.Clone();
-            var userModel2 = alternativeUser.Clone();
-            var updateModel = new UserModel(
-                username: userModel2.Username,
-                passwordHash: userModel1.PasswordHash,
-                email: userModel1.Email,
-                phone: userModel1.Phone
-            );
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var user = await usersQuery.AddUserAsync(userModel1);
-                await usersQuery.AddUserAsync(userModel2);
-                updateModel.Id = user.Id;
-                AsyncTestDelegate updateUser =
-                    async () => await usersQuery.UpdateUserAsync(updateModel);
+                var userModel1 = defaultUser.Clone();
+                var userModel2 = alternativeUser.Clone();
+                var updateModel = new UserModel(
+                    username: userModel2.Username,
+                    passwordHash: userModel1.PasswordHash,
+                    email: userModel1.Email,
+                    phone: userModel1.Phone
+                );
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var user = await usersQuery.AddUserAsync(userModel1);
+                    await usersQuery.AddUserAsync(userModel2);
+                    updateModel.Id = user.Id;
+                    AsyncTestDelegate updateUser =
+                        async () => await usersQuery.UpdateUserAsync(updateModel);
 
-                Assert.ThrowsAsync<UsernameTakenException>(updateUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.ThrowsAsync<UsernameTakenException>(updateUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestUpdateWrongUser()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestUpdateWrongUser()
         {
-            var userModel = defaultUser.Clone();
-            var updateModel = new UserModel(
-                username: "test_new",
-                passwordHash: userModel.PasswordHash,
-                email: userModel.Email,
-                phone: userModel.Phone
-            );
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var user = await usersQuery.AddUserAsync(userModel);
-                updateModel.Id = user.Id + 10;
-                AsyncTestDelegate updateUser =
-                    async () => await usersQuery.UpdateUserAsync(updateModel);
+                var userModel = defaultUser.Clone();
+                var updateModel = new UserModel(
+                    username: "test_new",
+                    passwordHash: userModel.PasswordHash,
+                    email: userModel.Email,
+                    phone: userModel.Phone
+                );
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var user = await usersQuery.AddUserAsync(userModel);
+                    updateModel.Id = user.Id + 10;
+                    AsyncTestDelegate updateUser =
+                        async () => await usersQuery.UpdateUserAsync(updateModel);
 
-                Assert.ThrowsAsync<UserNotFoundException>(updateUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.ThrowsAsync<UserNotFoundException>(updateUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public void TestUpdateUserInvalidId()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public void TestUpdateUserInvalidId()
         {
-            var updateModel = defaultUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                updateModel.Id = -1;
-                AsyncTestDelegate updateUser =
-                    async () => await usersQuery.UpdateUserAsync(updateModel);
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(updateUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                var updateModel = defaultUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    updateModel.Id = -1;
+                    AsyncTestDelegate updateUser =
+                        async () => await usersQuery.UpdateUserAsync(updateModel);
+                    Assert.ThrowsAsync<ArgumentOutOfRangeException>(updateUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestUpdateUserImmutable()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestUpdateUserImmutable()
         {
-            var userModel = defaultUser.Clone();
-            var updateModel = alternativeUser.Clone();
-            var usersQuery = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                var id = (await usersQuery.AddUserAsync(userModel)).Id;
-                updateModel.Id = id;
-                var updated = await usersQuery.UpdateUserAsync(updateModel);
-                updateModel.Username = "other_name";
-                updated.Username = "some_other_name";
-                var user = await usersQuery.GetUserAsync(id);
+                var userModel = defaultUser.Clone();
+                var updateModel = alternativeUser.Clone();
+                var usersQuery = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    var id = (await usersQuery.AddUserAsync(userModel)).Id;
+                    updateModel.Id = id;
+                    var updated = await usersQuery.UpdateUserAsync(updateModel);
+                    updateModel.Username = "other_name";
+                    updated.Username = "some_other_name";
+                    var user = await usersQuery.GetUserAsync(id);
 
-                Assert.AreEqual(user!.Username, alternativeUser.Username);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.AreEqual(user!.Username, alternativeUser.Username);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
+
+
     }
 
-    [Test]
-    public async Task TestDeleteUser()
+    [TestFixture]
+    public class DeleteUserTests : UsersRepositoryTests
     {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestDeleteUser()
         {
-            var userModel = defaultUser.Clone();
-            var usersRepository = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                UserModel user = await usersRepository.AddUserAsync(userModel);
-                AsyncTestDelegate deleteUser =
-                    async () => await usersRepository.DeleteUserAsync(user.Id);
+                var userModel = defaultUser.Clone();
+                var usersRepository = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    UserModel user = await usersRepository.AddUserAsync(userModel);
+                    AsyncTestDelegate deleteUser =
+                        async () => await usersRepository.DeleteUserAsync(user.Id);
 
-                Assert.DoesNotThrowAsync(deleteUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.DoesNotThrowAsync(deleteUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestDeleteUserWrongId()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestDeleteUserWrongId()
         {
-            var userModel = defaultUser.Clone();
-            var usersRepository = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                UserModel user = await usersRepository.AddUserAsync(userModel);
-                AsyncTestDelegate deleteUser =
-                    async () => await usersRepository.DeleteUserAsync(user.Id + 10);
+                var userModel = defaultUser.Clone();
+                var usersRepository = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    UserModel user = await usersRepository.AddUserAsync(userModel);
+                    AsyncTestDelegate deleteUser =
+                        async () => await usersRepository.DeleteUserAsync(user.Id + 10);
 
-                Assert.ThrowsAsync<UserNotFoundException>(deleteUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.ThrowsAsync<UserNotFoundException>(deleteUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public void TestDeleteUserInvalidId()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public void TestDeleteUserInvalidId()
         {
-            var usersRepository = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                AsyncTestDelegate deleteUser =
-                    async () => await usersRepository.DeleteUserAsync(-1);
+                var usersRepository = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    AsyncTestDelegate deleteUser =
+                        async () => await usersRepository.DeleteUserAsync(-1);
 
-                Assert.ThrowsAsync<ArgumentOutOfRangeException>(deleteUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.ThrowsAsync<ArgumentOutOfRangeException>(deleteUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
-    }
 
-    [Test]
-    public async Task TestDeleteUserPersist()
-    {
-        using (var context = new AppDbContext(_options))
+        [Test]
+        public async Task TestDeleteUserPersist()
         {
-            var userModel = defaultUser.Clone();
-            var usersRepository = new UsersRepository(context);
-            context.Database.BeginTransaction();
-            try
+            using (var context = new AppDbContext(_options))
             {
-                UserModel user = await usersRepository.AddUserAsync(userModel);
-                await usersRepository.DeleteUserAsync(user.Id);
-                UserModel? getUser = await usersRepository.GetUserAsync(user.Id);
+                var userModel = defaultUser.Clone();
+                var usersRepository = new UsersRepository(context);
+                context.Database.BeginTransaction();
+                try
+                {
+                    UserModel user = await usersRepository.AddUserAsync(userModel);
+                    await usersRepository.DeleteUserAsync(user.Id);
+                    UserModel? getUser = await usersRepository.GetUserAsync(user.Id);
 
-                Assert.IsNull(getUser);
-            }
-            finally
-            {
-                context.Database.RollbackTransaction();
+                    Assert.IsNull(getUser);
+                }
+                finally
+                {
+                    context.Database.RollbackTransaction();
+                }
             }
         }
+
     }
+
 }
