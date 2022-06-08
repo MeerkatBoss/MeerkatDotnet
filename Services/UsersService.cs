@@ -45,6 +45,7 @@ public class UsersService : IUsersService
             userId: user.Id,
             expirationDate: refreshTokenExpires
         );
+        await _context.Tokens.AddTokenAsync(tokenModel);
         return new(
             RefreshToken: refreshToken,
             AccessToken: GetAccessToken(user.Id),

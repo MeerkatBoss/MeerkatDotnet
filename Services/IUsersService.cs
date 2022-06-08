@@ -49,4 +49,5 @@ public interface IUsersService
     /// <param name="request">Request containing old pair of tokens</param>
     /// <returns>New pair of tokens</returns>
     Task<RefreshResponse> RefreshTokens(RefreshRequest request);
+
 }
