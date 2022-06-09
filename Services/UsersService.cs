@@ -1,6 +1,7 @@
 using System.Security.Cryptography;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
+using System.Diagnostics.CodeAnalysis;
 using MeerkatDotnet.Configurations;
 using MeerkatDotnet.Database.Models;
 using MeerkatDotnet.Models;
@@ -53,33 +54,64 @@ public class UsersService : IUsersService
         );
     }
 
-    public Task DeleteUserAsync(int id)
+    public async Task<LogInResponse> LogInUserAsync(LogInRequest request)
     {
-        throw new NotImplementedException();
+        (string username, string password) = request;
+        string passwordHash = GetHash(password);
+        UserModel? user = await _context.Users.LoginUserAsync(username, passwordHash);
+        string refreshToken = GenerateRefreshToken();
+        var tokenModel = new RefreshTokenModel(
+                value: refreshToken,
+                userId: user!.Id,
+                expirationDate: DateTime.UtcNow.AddDays(_tokenOptions.RefreshTokenExpirationDays));
+        await _context.Tokens.AddTokenAsync(tokenModel);
+        string accessToken = GetAccessToken(user!.Id);
+        return new LogInResponse(refreshToken, accessToken, user);
     }
 
     public Task<UserOutputModel> GetUserAsync(int id)
     {
-        throw new NotImplementedException();
+        return _context.Users.GetUserAsync(id)
+            .ContinueWith(task => (UserOutputModel) task.Result!);
     }
 
-    public Task<LogInResponse> LogInUserAsync(LogInRequest request)
+    public async Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel)
     {
-        throw new NotImplementedException();
+        UserModel? existingUser = await _context.Users.GetUserAsync(id);
+        var updatedUser = new UserModel(
+                username: updateModel.Username ?? existingUser!.Username,
+                passwordHash: GetHash(updateModel.Password) ?? existingUser!.PasswordHash,
+                email: updateModel.Email ?? existingUser!.Email,
+                phone: updateModel.Phone ?? existingUser!.Phone
+                ) { Id = id };
+        await _context.Users.UpdateUserAsync(updatedUser);
+        return updatedUser;
     }
 
-    public Task<RefreshResponse> RefreshTokens(RefreshRequest request)
+    public async Task DeleteUserAsync(int id)
     {
-        throw new NotImplementedException();
+        await _context.Users.DeleteUserAsync(id);
     }
 
-    public Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel)
+    public async Task<RefreshResponse> RefreshTokens(RefreshRequest request)
     {
-        throw new NotImplementedException();
+        (string accessToken, string refreshToken) = request;
+        await _context.Tokens.DeleteTokenAsync(refreshToken);
+        int userId = GetAccessTokenUser(accessToken);
+        refreshToken = GenerateRefreshToken();
+        var tokenModel = new RefreshTokenModel(
+                value: refreshToken,
+                userId: userId,
+                expirationDate: DateTime.UtcNow.AddDays(_tokenOptions.RefreshTokenExpirationDays));
+        await _context.Tokens.AddTokenAsync(tokenModel);
+        accessToken = GetAccessToken(userId);
+        return new RefreshResponse(refreshToken, accessToken);
     }
 
-    private string GetHash(string password)
+    [return: NotNullIfNotNull("password")]
+    private string? GetHash(string? password)
     {
+        if (password is null) return null;
         byte[] bytes = KeyDerivation.Pbkdf2(
             password: password,
             salt: _hashingOptions.SaltBytes,
@@ -115,5 +147,26 @@ public class UsersService : IUsersService
             random.GetBytes(bytes);
             return Convert.ToBase64String(bytes);
         }
+    }
+
+    private int GetAccessTokenUser(string accessToken)
+    {
+        var parameters = new TokenValidationParameters
+        {
+            ValidateIssuer = true,
+            ValidIssuer = _tokenOptions.Issuer,
+            ValidateAudience = true,
+            ValidAudience = _tokenOptions.Audience,
+            IssuerSigningKey = _tokenOptions.SecurityKey,
+        };
+
+        var tokenHandler = new JwtSecurityTokenHandler();
+        var principal = tokenHandler.ValidateToken(
+            accessToken,
+            parameters,
+            out SecurityToken securityToken
+        );
+
+        return Convert.ToInt32(principal!.Identity!.Name);
     }
 }

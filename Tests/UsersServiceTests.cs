@@ -286,7 +286,7 @@ public class UsersServiceTests
             Assert.AreEqual(updateModel.Username, response.Username);
             Assert.NotNull(updatedUser);
             Assert.NotNull(updatedUser!.PasswordHash);
-            Assert.AreEqual(returnedUser.Username, updatedUser!.Username);
+            Assert.AreEqual(updateModel.Username, updatedUser!.Username);
             _contextMock
                 .Verify(x => x.RollbackTransactionAsync(), Times.Never());
             _contextMock
@@ -345,8 +345,8 @@ public class UsersServiceTests
                 .Callback(() => activeTransactions--);
             _tokensMock
                 .Setup(x => x.AddTokenAsync(It.IsAny<RefreshTokenModel>()))
-                .Callback((RefreshTokenModel token) => addedToken = token)
-                .Returns((RefreshTokenModel token) => token);
+                .Callback<RefreshTokenModel>(token => addedToken = token)
+                .ReturnsAsync((RefreshTokenModel token) => token);
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             RefreshResponse response = await usersService.RefreshTokens(new RefreshRequest(accessToken, refreshToken));
