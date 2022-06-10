@@ -136,7 +136,7 @@ public class UsersServiceTests
         {
             "test", "test123", "test_test",
             "!test", "@test", "$test",
-            "%test", "^test", "&test"
+            "%test", "^test", "&test", "*test"
         };
 
         public static readonly string?[] ValidUpdatePasswords
