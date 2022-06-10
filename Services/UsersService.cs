@@ -8,8 +8,11 @@ using MeerkatDotnet.Models;
 using MeerkatDotnet.Models.Requests;
 using MeerkatDotnet.Models.Responses;
 using MeerkatDotnet.Repositories;
+using MeerkatDotnet.Validators;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.IdentityModel.Tokens;
+using FluentValidation;
+using System.Text;
 
 namespace MeerkatDotnet.Services;
 
@@ -31,12 +34,17 @@ public class UsersService : IUsersService
 
     public async Task<LogInResponse> SignUpUserAsync(UserInputModel inputModel)
     {
+        var validator = new UserInputModelValidator();
+        var res = validator.Validate(inputModel);
+        validator.ValidateAndThrow(inputModel);
+
         UserModel userModel = new(
             username: inputModel.Username,
             passwordHash: GetHash(inputModel.Password),
             email: inputModel.Email,
-            phone: inputModel.Phone
+            phone: CleanPhoneNumber(inputModel.Phone)
         );
+
         string refreshToken = GenerateRefreshToken();
         DateTime refreshTokenExpires = DateTime.UtcNow
             .AddDays(_tokenOptions.RefreshTokenExpirationDays);
@@ -56,6 +64,9 @@ public class UsersService : IUsersService
 
     public async Task<LogInResponse> LogInUserAsync(LogInRequest request)
     {
+        var validator = new LogInRequestValidator();
+        validator.ValidateAndThrow(request);
+
         (string username, string password) = request;
         string passwordHash = GetHash(password);
         UserModel? user = await _context.Users.LoginUserAsync(username, passwordHash);
@@ -71,25 +82,38 @@ public class UsersService : IUsersService
 
     public Task<UserOutputModel> GetUserAsync(int id)
     {
+        if (id <= 0)
+            throw new ValidationException("Invalid id: id must be a positive integer");
+
         return _context.Users.GetUserAsync(id)
-            .ContinueWith(task => (UserOutputModel) task.Result!);
+            .ContinueWith(task => (UserOutputModel)task.Result!);
     }
 
     public async Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel)
     {
+        if (id <= 0)
+            throw new ValidationException("Invalid id: id must be a positive integer");
+
+        var validator = new UserUpdateModelValidator();
+        validator.ValidateAndThrow(updateModel);
+
         UserModel? existingUser = await _context.Users.GetUserAsync(id);
         var updatedUser = new UserModel(
                 username: updateModel.Username ?? existingUser!.Username,
                 passwordHash: GetHash(updateModel.Password) ?? existingUser!.PasswordHash,
                 email: updateModel.Email ?? existingUser!.Email,
-                phone: updateModel.Phone ?? existingUser!.Phone
-                ) { Id = id };
+                phone: CleanPhoneNumber(updateModel.Phone) ?? existingUser!.Phone
+                )
+        { Id = id };
         await _context.Users.UpdateUserAsync(updatedUser);
         return updatedUser;
     }
 
     public async Task DeleteUserAsync(int id)
     {
+        if (id <= 0)
+            throw new ValidationException("Invalid id: id must be a positive integer");
+
         await _context.Users.DeleteUserAsync(id);
     }
 
@@ -161,12 +185,32 @@ public class UsersService : IUsersService
         };
 
         var tokenHandler = new JwtSecurityTokenHandler();
-        var principal = tokenHandler.ValidateToken(
-            accessToken,
-            parameters,
-            out SecurityToken securityToken
-        );
+        try
+        {
+            var principal = tokenHandler.ValidateToken(
+                accessToken,
+                parameters,
+                out SecurityToken securityToken
+            );
 
-        return Convert.ToInt32(principal!.Identity!.Name);
+            return Convert.ToInt32(principal!.Identity!.Name);
+        }
+        catch
+        {
+            throw new ValidationException("Invalid access token provided");
+        }
+    }
+
+    private string? CleanPhoneNumber(string? phone)
+    {
+        if (phone is null)
+            return null;
+
+        string charsToErase = " +-()";
+        StringBuilder builder = new(phone);
+        foreach (var c in charsToErase)
+            builder.Replace(c.ToString(), null);
+
+        return builder.ToString();
     }
 }

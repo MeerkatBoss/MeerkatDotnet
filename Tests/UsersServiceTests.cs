@@ -10,11 +10,12 @@ using MeerkatDotnet.Configurations;
 using MeerkatDotnet.Models.Requests;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
-using System.ComponentModel.DataAnnotations;
+using FluentValidation;
 
 namespace MeerkatDotnet.Tests;
 
 [TestFixture]
+[Category("UsersService")]
 public class UsersServiceTests
 {
     protected readonly Mock<IRepositoryContext> _contextMock;
@@ -134,9 +135,9 @@ public class UsersServiceTests
 
         public static readonly string[] ValidPasswords = new[]
         {
-            "test", "test123", "test_test",
-            "!test", "@test", "$test",
-            "%test", "^test", "&test", "*test"
+            "testtest", "test1234", "test_test",
+            "!testtest", "@testtest", "$testtest",
+            "%testtest", "^testtest", "&testtest", "*testtest"
         };
 
         public static readonly string?[] ValidUpdatePasswords
@@ -149,7 +150,7 @@ public class UsersServiceTests
 
         public static readonly string?[] ValidPhones = new[]
         {
-            "12345", "+12345", "1(234)56",
+            "12345", "+12345", "1(234)5",
             "12-34-5", "12 34 5", null
         };
 
@@ -170,14 +171,14 @@ public class UsersServiceTests
 
         public static readonly string[] InvalidPasswords = new[]
         {
-            "test test",
-            "(test", ")test", "`test",
-            "~test", "[test", "]test",
-            ":test", "{test", "}test",
-            ";test", ",test", ".test",
-            "/test", "|test", "\\test",
-            "<test", ">test", "\'test",
-            "\"test"
+            "test test", "test",
+            "(testtest", ")testtest", "`testtest",
+            "~testtest", "[testtest", "]testtest",
+            ":testtest", "{testtest", "}testtest",
+            ";testtest", ",testtest", ".testtest",
+            "/testtest", "|testtest", "\\testtest",
+            "<testtest", ">testtest", "\'testtest",
+            "\"testtest"
         };
 
         public static readonly string[] InvalidEmails = new[]
@@ -216,6 +217,7 @@ public class UsersServiceTests
     }
 
     [TestFixture]
+    [Category("UsersService.SignUpUser")]
     public class SignUpUserTests : UsersServiceTests
     {
 
@@ -232,11 +234,6 @@ public class UsersServiceTests
                 Email: email,
                 Phone: phone
             );
-            UserModel returnedUser = new(
-                username: userInput.Username,
-                passwordHash: userInput.Password
-            )
-            { Id = 1 };
             RefreshTokenModel returnedToken = new("test", 1, DateTime.UtcNow.AddDays(7));
             UserModel? addedUser = null;
             int activeTransactions = 0;
@@ -244,7 +241,12 @@ public class UsersServiceTests
             _usersMock
                 .Setup(obj => obj.AddUserAsync(It.IsAny<UserModel>()))
                 .Callback<UserModel>(m => addedUser = m)
-                .ReturnsAsync(returnedUser);
+                .ReturnsAsync((UserModel m) =>
+                {
+                    var res = m.Clone();
+                    res.Id = 1;
+                    return res;
+                });
             _tokensMock
                 .Setup(x => x.AddTokenAsync(It.IsAny<RefreshTokenModel>()))
                 .Callback<RefreshTokenModel>(m => addedToken = m)
@@ -260,7 +262,7 @@ public class UsersServiceTests
             LogInResponse response = await usersService.SignUpUserAsync(userInput);
 
             AssertNoneNull(response.RefreshToken, response.AccessToken, response.User);
-            Assert.AreEqual(returnedUser.Id, response.User.Id);
+            Assert.AreEqual(1, response.User.Id);
             _usersMock.Verify(
                 x => x.AddUserAsync(It.IsAny<UserModel>()),
                 Times.Once());
@@ -274,7 +276,7 @@ public class UsersServiceTests
             Assert.AreEqual(addedUser!.Email, response.User.Email);
             Assert.AreEqual(addedUser!.Phone, response.User.Phone);
             ValidateTokenModel(addedToken);
-            ValidateAccessToken(response.AccessToken, returnedUser.Id.ToString());
+            ValidateAccessToken(response.AccessToken, "1");
             Assert.AreEqual(0, activeTransactions);
             _contextMock.Verify(x => x.RollbackTransactionAsync(), Times.Never());
         }
@@ -342,6 +344,7 @@ public class UsersServiceTests
     }
 
     [TestFixture]
+    [Category("UsersService.LogInUser")]
     public class LogInUserTests : UsersServiceTests
     {
         [Test]
@@ -416,6 +419,7 @@ public class UsersServiceTests
     }
 
     [TestFixture]
+    [Category("UsersService.GetUser")]
     public class GetUserTests : UsersServiceTests
     {
         [Test]
@@ -452,6 +456,7 @@ public class UsersServiceTests
     }
 
     [TestFixture]
+    [Category("UsersService.UpdateUser")]
     public class UpdateUserTests : UsersServiceTests
     {
         [Test]
@@ -472,7 +477,7 @@ public class UsersServiceTests
                     username: "test",
                     passwordHash: "test",
                     email: "test@test.com",
-                    phone: "12345")
+                    phone: "1234567")
             { Id = 1 };
             UserModel? updatedUser = null;
             int activeTransactions = 0;
@@ -503,7 +508,7 @@ public class UsersServiceTests
                     updateModel.Username ?? returnedUser.Username,
                     updateModel.Password ?? "hash",
                     updateModel.Email ?? returnedUser.Email,
-                    updateModel.Phone ?? returnedUser.Phone);
+                    updateModel.Phone is null ? returnedUser.Phone : "12345");
             if (updateModel.Password is not null)
                 Assert.AreNotEqual(updateModel.Password, updatedUser!.PasswordHash);
             _contextMock
@@ -590,6 +595,7 @@ public class UsersServiceTests
     }
 
     [TestFixture]
+    [Category("UsersService.DeleteUser")]
     public class DeleteUserTests : UsersServiceTests
     {
         [Test]
@@ -627,6 +633,7 @@ public class UsersServiceTests
     }
 
     [TestFixture]
+    [Category("UsersService.RefreshTokens")]
     public class RefreshTokensTests : UsersServiceTests
     {
         [Test]
