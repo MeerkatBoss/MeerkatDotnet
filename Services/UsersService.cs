@@ -12,6 +12,7 @@ using MeerkatDotnet.Validators;
 using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 using Microsoft.IdentityModel.Tokens;
 using FluentValidation;
+using FluentValidation.Results;
 using System.Text;
 
 namespace MeerkatDotnet.Services;
@@ -35,8 +36,9 @@ public class UsersService : IUsersService
     public async Task<LogInResponse> SignUpUserAsync(UserInputModel inputModel)
     {
         var validator = new UserInputModelValidator();
-        var res = validator.Validate(inputModel);
-        validator.ValidateAndThrow(inputModel);
+        ValidationResult res = validator.Validate(inputModel);
+        if (!res.IsValid)
+            throw new ValidationException(res.Errors);
 
         UserModel userModel = new(
             username: inputModel.Username,
@@ -65,7 +67,9 @@ public class UsersService : IUsersService
     public async Task<LogInResponse> LogInUserAsync(LogInRequest request)
     {
         var validator = new LogInRequestValidator();
-        validator.ValidateAndThrow(request);
+        ValidationResult res = validator.Validate(request);
+        if(!res.IsValid)
+            throw new ValidationException(res.Errors);
 
         (string username, string password) = request;
         string passwordHash = GetHash(password);
@@ -83,7 +87,10 @@ public class UsersService : IUsersService
     public Task<UserOutputModel> GetUserAsync(int id)
     {
         if (id <= 0)
-            throw new ValidationException("Invalid id: id must be a positive integer");
+        {
+            FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
+            throw new ValidationException(new[] { failure });
+        }
 
         return _context.Users.GetUserAsync(id)
             .ContinueWith(task => (UserOutputModel)task.Result!);
@@ -91,11 +98,12 @@ public class UsersService : IUsersService
 
     public async Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel)
     {
-        if (id <= 0)
-            throw new ValidationException("Invalid id: id must be a positive integer");
-
         var validator = new UserUpdateModelValidator();
-        validator.ValidateAndThrow(updateModel);
+        ValidationResult res = validator.Validate(updateModel);
+        if (id <= 0)
+            res.Errors.Add(new("Id", "Invalid id provided"));
+        if (!res.IsValid)
+            throw new ValidationException(res.Errors);
 
         UserModel? existingUser = await _context.Users.GetUserAsync(id);
         var updatedUser = new UserModel(
@@ -112,7 +120,10 @@ public class UsersService : IUsersService
     public async Task DeleteUserAsync(int id)
     {
         if (id <= 0)
-            throw new ValidationException("Invalid id: id must be a positive integer");
+        {
+            FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
+            throw new ValidationException(new[] { failure });
+        }
 
         await _context.Users.DeleteUserAsync(id);
     }
@@ -195,9 +206,10 @@ public class UsersService : IUsersService
 
             return Convert.ToInt32(principal!.Identity!.Name);
         }
-        catch
+        catch (Exception e)
         {
-            throw new ValidationException("Invalid access token provided");
+            FluentValidation.Results.ValidationFailure failure = new("JWT", e.Message);
+            throw new ValidationException(new[] { failure });
         }
     }
 
