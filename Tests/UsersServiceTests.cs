@@ -11,6 +11,7 @@ using MeerkatDotnet.Models.Requests;
 using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using FluentValidation;
+using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Tests;
 
@@ -416,6 +417,20 @@ public class UsersServiceTests
             Assert.ThrowsAsync<ValidationException>(logIn);
         }
 
+        [Test]
+        public void TestLogInUserFailed()
+        {
+            var request = new LogInRequest("test", "testtest");
+            _usersMock
+                .Setup(x => x.LoginUserAsync(It.IsAny<string>(), It.IsAny<string>()))
+                .ReturnsAsync((UserModel?)null);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate logIn = async () => await usersService.LogInUserAsync(request);
+
+            Assert.ThrowsAsync<LoginFailedException>(logIn);
+        }
+
     }
 
     [TestFixture]
@@ -451,6 +466,19 @@ public class UsersServiceTests
             AsyncTestDelegate getUser = async () => await usersService.GetUserAsync(-1);
 
             Assert.ThrowsAsync<ValidationException>(getUser);
+        }
+
+        [Test]
+        public void TestGetUserNotFound()
+        {
+            _usersMock
+                .Setup(x => x.GetUserAsync(It.IsAny<int>()))
+                .ReturnsAsync((UserModel?)null);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate getUser = async () => await usersService.GetUserAsync(1);
+
+            Assert.ThrowsAsync<EntityNotFoundException>(getUser);
         }
 
     }
@@ -592,6 +620,23 @@ public class UsersServiceTests
             Assert.ThrowsAsync<ValidationException>(updateUser);
         }
 
+        [Test]
+        public void TestUpdateUserNotFound()
+        {
+            var request = new UserUpdateModel("test", "testtest", null, null);
+            _usersMock
+                .Setup(x => x.UpdateUserAsync(It.IsAny<UserModel>()))
+                .ThrowsAsync(new UserNotFoundException());
+            _usersMock
+                .Setup(x => x.GetUserAsync(It.IsAny<int>()))
+                .ReturnsAsync((UserModel?) null);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, request);
+
+            Assert.ThrowsAsync<ValidationException>(updateUser);
+        }
+
     }
 
     [TestFixture]
@@ -630,23 +675,45 @@ public class UsersServiceTests
             Assert.ThrowsAsync<ValidationException>(deleteUser);
         }
 
+        [Test]
+        public void TestDeleteUserNotFound()
+        {
+            _usersMock
+                .Setup(x => x.DeleteUserAsync(It.IsAny<int>()))
+                .ThrowsAsync(new UserNotFoundException());
+            _usersMock
+                .Setup(x => x.GetUserAsync(It.IsAny<int>()))
+                .ReturnsAsync((UserModel?) null);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1);
+
+            Assert.ThrowsAsync<ValidationException>(deleteUser);
+        }
+
     }
 
     [TestFixture]
     [Category("UsersService.RefreshTokens")]
     public class RefreshTokensTests : UsersServiceTests
     {
-        [Test]
-        public async Task TestRefreshTokens()
+
+        private string GetAccessToken(int userId)
         {
             JwtSecurityToken jwt = new(
                     issuer: _tokenOptions.Issuer,
                     audience: _tokenOptions.Audience,
-                    claims: new List<Claim> { new Claim(ClaimTypes.Name, "1") },
-                    expires: DateTime.UtcNow.AddMinutes(2),
+                    claims: new List<Claim> { new Claim(ClaimTypes.Name, userId.ToString()) },
+                    expires: DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)),
                     signingCredentials: new(_tokenOptions.SecurityKey, SecurityAlgorithms.HmacSha256)
                     );
-            string accessToken = new JwtSecurityTokenHandler().WriteToken(jwt);
+            return new JwtSecurityTokenHandler().WriteToken(jwt);
+        }
+
+        [Test]
+        public async Task TestRefreshTokens()
+        {
+            string accessToken = GetAccessToken(1);
             string refreshToken = "test";
             int activeTransactions = 0;
             RefreshTokenModel? addedToken = null;
@@ -677,6 +744,37 @@ public class UsersServiceTests
         public void TestRefreshTokensInvalidAccessToken()
         {
             var request = new RefreshRequest("_invalid_", "test");
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
+
+            Assert.ThrowsAsync<ValidationException>(refreshTokens);
+        }
+
+        [Test]
+        public void TestRefreshTokensRefreshTokenNotFound()
+        {
+            var request = new RefreshRequest(GetAccessToken(1), "test");
+            _tokensMock
+                .Setup(x => x.GetTokenAsync(It.IsAny<string>()))
+                .ReturnsAsync((RefreshTokenModel?) null);
+            _tokensMock
+                .Setup(x => x.DeleteTokenAsync(It.IsAny<string>()))
+                .ThrowsAsync(new TokenNotFoundException());
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
+
+            Assert.ThrowsAsync<ValidationException>(refreshTokens);
+        }
+
+        [Test]
+        public void TestRefreshTokensUserNotFound()
+        {
+            var request = new RefreshRequest(GetAccessToken(1), "test");
+            _usersMock
+                .Setup(x => x.GetUserAsync(It.IsAny<int>()))
+                .ReturnsAsync((UserModel?) null);
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
