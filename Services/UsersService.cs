@@ -14,6 +14,7 @@ using Microsoft.IdentityModel.Tokens;
 using FluentValidation;
 using FluentValidation.Results;
 using System.Text;
+using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Services;
 
@@ -74,26 +75,33 @@ public class UsersService : IUsersService
         (string username, string password) = request;
         string passwordHash = GetHash(password);
         UserModel? user = await _context.Users.LoginUserAsync(username, passwordHash);
+        if (user is null)
+        {
+            throw new LoginFailedException($"Login for {username} failed: wrong username or password");
+        }
         string refreshToken = GenerateRefreshToken();
         var tokenModel = new RefreshTokenModel(
                 value: refreshToken,
-                userId: user!.Id,
+                userId: user.Id,
                 expirationDate: DateTime.UtcNow.AddDays(_tokenOptions.RefreshTokenExpirationDays));
         await _context.Tokens.AddTokenAsync(tokenModel);
-        string accessToken = GetAccessToken(user!.Id);
+        string accessToken = GetAccessToken(user.Id);
         return new LogInResponse(refreshToken, accessToken, user);
     }
 
-    public Task<UserOutputModel> GetUserAsync(int id)
+    public async Task<UserOutputModel> GetUserAsync(int id)
     {
         if (id <= 0)
         {
             FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
             throw new ValidationException(new[] { failure });
         }
-
-        return _context.Users.GetUserAsync(id)
-            .ContinueWith(task => (UserOutputModel)task.Result!);
+        UserModel? user = await _context.Users.GetUserAsync(id);
+        if (user is null)
+        {
+            throw new EntityNotFoundException($"User with id={id} does not exist");
+        }
+        return user;
     }
 
     public async Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel)
@@ -106,6 +114,12 @@ public class UsersService : IUsersService
             throw new ValidationException(res.Errors);
 
         UserModel? existingUser = await _context.Users.GetUserAsync(id);
+        if (existingUser is null)
+        {
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    "Id", $"No user with id={id} exists");
+            throw new ValidationException(new[] { failure });
+        }
         var updatedUser = new UserModel(
                 username: updateModel.Username ?? existingUser!.Username,
                 passwordHash: GetHash(updateModel.Password) ?? existingUser!.PasswordHash,
@@ -124,15 +138,39 @@ public class UsersService : IUsersService
             FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
             throw new ValidationException(new[] { failure });
         }
-
-        await _context.Users.DeleteUserAsync(id);
+        try
+        {
+            await _context.Users.DeleteUserAsync(id);
+        }
+        catch (UserNotFoundException)
+        {
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    "Id", $"No user with id={id} exists");
+            throw new ValidationException(new[] { failure });
+        }
     }
 
     public async Task<RefreshResponse> RefreshTokens(RefreshRequest request)
     {
         (string accessToken, string refreshToken) = request;
-        await _context.Tokens.DeleteTokenAsync(refreshToken);
+        try
+        {
+            await _context.Tokens.DeleteTokenAsync(refreshToken);
+        }
+        catch (TokenNotFoundException)
+        {
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    nameof(request.RefreshToken), $"Provided token does not exist");
+            throw new ValidationException(new[] { failure });
+        }
         int userId = GetAccessTokenUser(accessToken);
+        UserModel? user = await _context.Users.GetUserAsync(userId);
+        if (user is null)
+        {
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    nameof(request.AccessToken), $"Token user does not exist");
+            throw new ValidationException(new [] { failure });
+        }
         refreshToken = GenerateRefreshToken();
         var tokenModel = new RefreshTokenModel(
                 value: refreshToken,

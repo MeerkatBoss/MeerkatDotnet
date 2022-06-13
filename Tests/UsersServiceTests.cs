@@ -727,6 +727,9 @@ public class UsersServiceTests
                 .Setup(x => x.AddTokenAsync(It.IsAny<RefreshTokenModel>()))
                 .Callback<RefreshTokenModel>(token => addedToken = token)
                 .ReturnsAsync((RefreshTokenModel token) => token);
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(new UserModel("test", "testtest"){Id = 1});
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             RefreshResponse response = await usersService.RefreshTokens(new RefreshRequest(accessToken, refreshToken));
