@@ -120,6 +120,9 @@ public class UsersServiceTests
     [TearDown]
     public void ClearMocks()
     {
+        _contextMock.Reset();
+        _contextMock.Setup(c => c.Users).Returns(_usersMock.Object);
+        _contextMock.Setup(c => c.Tokens).Returns(_tokensMock.Object);
         _usersMock.Reset();
         _tokensMock.Reset();
     }
@@ -340,6 +343,35 @@ public class UsersServiceTests
             AsyncTestDelegate signUp = async () => await usersService.SignUpUserAsync(request);
 
             Assert.ThrowsAsync<ValidationException>(signUp);
+        }
+
+        [Test]
+        public void TestSignUpUserDbException()
+        {
+            var inputModel = new UserInputModel(
+                    Username: "test",
+                    Password: "testtest",
+                    Email: null,
+                    Phone: null);
+            var sequence = new List<int>();
+            _contextMock
+                .Setup(x => x.BeginTransactionAsync())
+                .Callback(() => sequence.Add(1));
+            _usersMock
+                .Setup(x => x.AddUserAsync(It.IsAny<UserModel>()))
+                .Callback(() => sequence.Add(2))
+                .ThrowsAsync(new Exception());
+            _contextMock
+                .Setup(x => x.RollbackTransactionAsync())
+                .Callback(() => sequence.Add(3));
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate signUp = async () => await usersService.SignUpUserAsync(inputModel);
+
+            Assert.ThrowsAsync<Exception>(signUp);
+            var expectedSequence = new List<int>{ 1, 2, 3 };
+            Assert.AreEqual(expectedSequence, sequence);
+            _contextMock.Verify(x => x.CommitTransactionAsync(), Times.Never());
         }
 
     }
@@ -637,6 +669,38 @@ public class UsersServiceTests
             Assert.ThrowsAsync<ValidationException>(updateUser);
         }
 
+        [Test]
+        public void TestUpdateUserDbException()
+        {
+            var updateModel = new UserUpdateModel(
+                    Username: "test",
+                    Password: null,
+                    Email: null,
+                    Phone: null);
+            var sequence = new List<int>();
+            _contextMock
+                .Setup(x => x.BeginTransactionAsync())
+                .Callback(() => sequence.Add(1));
+            _usersMock
+                .Setup(x => x.UpdateUserAsync(It.IsAny<UserModel>()))
+                .Callback(() => sequence.Add(2))
+                .ThrowsAsync(new Exception());
+            _contextMock
+                .Setup(x => x.RollbackTransactionAsync())
+                .Callback(() => sequence.Add(3));
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(new UserModel("test1", "testtest"){ Id = 1 });
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
+
+            Assert.ThrowsAsync<Exception>(updateUser);
+            var expectedSequence = new List<int>{ 1, 2, 3 };
+            Assert.AreEqual(expectedSequence, sequence);
+            _contextMock.Verify(x => x.CommitTransactionAsync(), Times.Never());
+        }
+
     }
 
     [TestFixture]
@@ -691,6 +755,31 @@ public class UsersServiceTests
             Assert.ThrowsAsync<ValidationException>(deleteUser);
         }
 
+        [Test]
+        public void TestDeleteUserDbException()
+        {
+            var sequence = new List<int>();
+            _contextMock
+                .Setup(x => x.BeginTransactionAsync())
+                .Callback(() => sequence.Add(1));
+            _usersMock
+                .Setup(x => x.DeleteUserAsync(It.IsAny<int>()))
+                .Callback(() => sequence.Add(2))
+                .ThrowsAsync(new Exception());
+            _contextMock
+                .Setup(x => x.RollbackTransactionAsync())
+                .Callback(() => sequence.Add(3));
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1);
+
+            Assert.ThrowsAsync<Exception>(deleteUser);
+            var expectedSequence = new List<int>{ 1, 2, 3 };
+            Assert.AreEqual(expectedSequence, sequence);
+            _contextMock.Verify(x => x.CommitTransactionAsync(), Times.Never());
+
+        }
+
     }
 
     [TestFixture]
@@ -727,6 +816,9 @@ public class UsersServiceTests
                 .Setup(x => x.AddTokenAsync(It.IsAny<RefreshTokenModel>()))
                 .Callback<RefreshTokenModel>(token => addedToken = token)
                 .ReturnsAsync((RefreshTokenModel token) => token);
+            _tokensMock
+                .Setup(x => x.GetTokenAsync("test"))
+                .ReturnsAsync(new RefreshTokenModel("test", 1, DateTime.UtcNow.AddDays(2)));
             _usersMock
                 .Setup(x => x.GetUserAsync(1))
                 .ReturnsAsync(new UserModel("test", "testtest"){Id = 1});
@@ -764,6 +856,9 @@ public class UsersServiceTests
             _tokensMock
                 .Setup(x => x.DeleteTokenAsync(It.IsAny<string>()))
                 .ThrowsAsync(new TokenNotFoundException());
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(new UserModel("test", "testtest"){Id = 1});
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
@@ -783,6 +878,97 @@ public class UsersServiceTests
             AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
 
             Assert.ThrowsAsync<ValidationException>(refreshTokens);
+        }
+
+        [Test]
+        public void TestRefreshTokensRefreshTokenExpired()
+        {
+            var request = new RefreshRequest(GetAccessToken(1), "test");
+            var refreshToken = new RefreshTokenModel(
+                    value: "test",
+                    userId: 1,
+                    expirationDate: DateTime.UtcNow.Subtract(TimeSpan.FromMinutes(1)));
+            _tokensMock
+                .Setup(x => x.GetTokenAsync("test"))
+                .ReturnsAsync(refreshToken);
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(new UserModel("test", "testtest"){Id = 1});
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
+
+            Assert.ThrowsAsync<ValidationException>(refreshTokens);
+            _tokensMock.Verify(x => x.DeleteTokenAsync("test"), Times.Once());
+        }
+
+        [Test]
+        public void TestRefreshTokensDbException()
+        {
+            var request = new RefreshRequest(GetAccessToken(1), "test");
+            var sequence = new List<int>();
+            _contextMock
+                .Setup(x => x.BeginTransactionAsync())
+                .Callback(() => sequence.Add(1));
+            _tokensMock
+                .Setup(x => x.DeleteTokenAsync(It.IsAny<string>()))
+                .Callback(() => sequence.Add(2))
+                .ThrowsAsync(new Exception());
+            _contextMock
+                .Setup(x => x.RollbackTransactionAsync())
+                .Callback(() => sequence.Add(3));
+            _tokensMock
+                .Setup(x => x.GetTokenAsync("test"))
+                .ReturnsAsync(new RefreshTokenModel("test", 1, DateTime.UtcNow.AddDays(2)));
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
+
+            Assert.ThrowsAsync<Exception>(refreshTokens);
+            var expectedSequence = new List<int>{ 1, 2, 3 };
+            Assert.AreEqual(expectedSequence, sequence);
+            _contextMock.Verify(x => x.CommitTransactionAsync(), Times.Never());
+        }
+
+        [Test]
+        public void TestRefreshTokensDifferentUsers()
+        {
+            var userTokens1 = new List<RefreshTokenModel>
+            {
+                new("test1", 1, DateTime.UtcNow.AddDays(1)),
+                new("test2", 1, DateTime.UtcNow.AddDays(2))
+            };
+            var userTokens2 = new List<RefreshTokenModel>
+            {
+                new("test3", 2, DateTime.UtcNow.AddDays(3)),
+                new("test4", 2, DateTime.UtcNow.AddDays(1))
+            };
+            var request = new RefreshRequest(GetAccessToken(1), userTokens2[0].Value);
+            _usersMock
+                .Setup(x => x.GetUserAsync(It.IsAny<int>()))
+                .ReturnsAsync((int id) => new UserModel($"user{id}", "testtest"){ Id = id });
+            _tokensMock
+                .Setup(x => x.GetAllTokensAsync(1))
+                .ReturnsAsync(userTokens1);
+            _tokensMock
+                .Setup(x => x.GetAllTokensAsync(2))
+                .ReturnsAsync(userTokens2);
+            _tokensMock
+                .Setup(x => x.GetTokenAsync(It.IsIn<string>(userTokens1.Select(x => x.Value))))
+                .ReturnsAsync((string val) => new RefreshTokenModel(val, 1, DateTime.UtcNow.AddDays(1)));
+            _tokensMock
+                .Setup(x => x.GetTokenAsync(It.IsIn<string>(userTokens2.Select(x => x.Value))))
+                .ReturnsAsync((string val) => new RefreshTokenModel(val, 2, DateTime.UtcNow.AddDays(1)));
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
+
+            Assert.ThrowsAsync<ValidationException>(refreshTokens);
+            foreach (var token in userTokens1.Concat(userTokens2))
+            {
+                _tokensMock.Verify(x => x.DeleteTokenAsync(token.Value), Times.Once());
+            }
+
         }
 
     }
