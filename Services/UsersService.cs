@@ -51,13 +51,24 @@ public class UsersService : IUsersService
         string refreshToken = GenerateRefreshToken();
         DateTime refreshTokenExpires = DateTime.UtcNow
             .AddDays(_tokenOptions.RefreshTokenExpirationDays);
-        UserModel user = await _context.Users.AddUserAsync(userModel);
-        RefreshTokenModel tokenModel = new(
-            value: refreshToken,
-            userId: user.Id,
-            expirationDate: refreshTokenExpires
-        );
-        await _context.Tokens.AddTokenAsync(tokenModel);
+        UserModel user;
+        try
+        {
+            await _context.BeginTransactionAsync();
+            user = await _context.Users.AddUserAsync(userModel);
+            RefreshTokenModel tokenModel = new(
+                value: refreshToken,
+                userId: user.Id,
+                expirationDate: refreshTokenExpires
+            );
+            await _context.Tokens.AddTokenAsync(tokenModel);
+            await _context.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _context.RollbackTransactionAsync();
+            throw;
+        }
         return new(
             RefreshToken: refreshToken,
             AccessToken: GetAccessToken(user.Id),
@@ -127,7 +138,17 @@ public class UsersService : IUsersService
                 phone: CleanPhoneNumber(updateModel.Phone) ?? existingUser!.Phone
                 )
         { Id = id };
-        await _context.Users.UpdateUserAsync(updatedUser);
+        try
+        {
+            await _context.BeginTransactionAsync();
+            await _context.Users.UpdateUserAsync(updatedUser);
+            await _context.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _context.RollbackTransactionAsync();
+            throw;
+        }
         return updatedUser;
     }
 
@@ -140,27 +161,48 @@ public class UsersService : IUsersService
         }
         try
         {
+            await _context.BeginTransactionAsync();
             await _context.Users.DeleteUserAsync(id);
+            await _context.CommitTransactionAsync();
         }
         catch (UserNotFoundException)
         {
+            await _context.RollbackTransactionAsync();
             var failure = new FluentValidation.Results.ValidationFailure(
                     "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
+        }
+        catch
+        {
+            await _context.RollbackTransactionAsync();
+            throw;
         }
     }
 
     public async Task<RefreshResponse> RefreshTokens(RefreshRequest request)
     {
         (string accessToken, string refreshToken) = request;
-        try
-        {
-            await _context.Tokens.DeleteTokenAsync(refreshToken);
-        }
-        catch (TokenNotFoundException)
+        RefreshTokenModel? oldToken = await _context.Tokens.GetTokenAsync(refreshToken);
+        if (oldToken is null)
         {
             var failure = new FluentValidation.Results.ValidationFailure(
-                    nameof(request.RefreshToken), $"Provided token does not exist");
+                    nameof(request.RefreshToken), "Provided token does not exist");
+            throw new ValidationException(new[] { failure });
+        }
+        if (oldToken.IsExpired)
+        {
+            try
+            {
+                await _context.BeginTransactionAsync();
+                await _context.Tokens.DeleteTokenAsync(refreshToken);
+                await _context.CommitTransactionAsync();
+            }
+            catch
+            {
+                await _context.RollbackTransactionAsync();
+            }
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    nameof(request.RefreshToken), "Provided token is expired");
             throw new ValidationException(new[] { failure });
         }
         int userId = GetAccessTokenUser(accessToken);
@@ -171,12 +213,33 @@ public class UsersService : IUsersService
                     nameof(request.AccessToken), $"Token user does not exist");
             throw new ValidationException(new [] { failure });
         }
-        refreshToken = GenerateRefreshToken();
-        var tokenModel = new RefreshTokenModel(
-                value: refreshToken,
-                userId: userId,
-                expirationDate: DateTime.UtcNow.AddDays(_tokenOptions.RefreshTokenExpirationDays));
-        await _context.Tokens.AddTokenAsync(tokenModel);
+        if (userId != oldToken.UserId)
+        {
+            await ClearUsersTokens(userId);
+            await ClearUsersTokens(oldToken.UserId);
+            var failure1 = new FluentValidation.Results.ValidationFailure(
+                    nameof(request.AccessToken), "Owner id of tokens does not match");
+            var failure2 = new FluentValidation.Results.ValidationFailure(
+                    nameof(request.RefreshToken), "Owner id of tokens does not match");
+            throw new ValidationException(new[] { failure1, failure2 });
+        }
+        try
+        {
+            await _context.BeginTransactionAsync();
+            await _context.Tokens.DeleteTokenAsync(refreshToken);
+            refreshToken = GenerateRefreshToken();
+            var tokenModel = new RefreshTokenModel(
+                    value: refreshToken,
+                    userId: userId,
+                    expirationDate: DateTime.UtcNow.AddDays(_tokenOptions.RefreshTokenExpirationDays));
+            await _context.Tokens.AddTokenAsync(tokenModel);
+            await _context.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _context.RollbackTransactionAsync();
+            throw;
+        }
         accessToken = GetAccessToken(userId);
         return new RefreshResponse(refreshToken, accessToken);
     }
@@ -263,4 +326,25 @@ public class UsersService : IUsersService
 
         return builder.ToString();
     }
+
+    private async Task ClearUsersTokens(int userId)
+    {
+        try
+        {
+            IEnumerable<RefreshTokenModel>? tokens = await _context.Tokens.GetAllTokensAsync(userId);
+            if (tokens is null)
+                return;
+            await _context.BeginTransactionAsync();
+            foreach (var token in tokens)
+            {
+                await _context.Tokens.DeleteTokenAsync(token.Value);
+            }
+            await _context.CommitTransactionAsync();
+        }
+        catch
+        {
+            await _context.RollbackTransactionAsync();
+        }
+    }
+
 }

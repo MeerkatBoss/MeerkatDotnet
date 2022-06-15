@@ -920,6 +920,9 @@ public class UsersServiceTests
             _tokensMock
                 .Setup(x => x.GetTokenAsync("test"))
                 .ReturnsAsync(new RefreshTokenModel("test", 1, DateTime.UtcNow.AddDays(2)));
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(new UserModel("test", "testtest"){Id = 1});
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             AsyncTestDelegate refreshTokens = async () => await usersService.RefreshTokens(request);
