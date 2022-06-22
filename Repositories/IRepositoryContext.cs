@@ -20,15 +20,24 @@ public interface IRepositoryContext
     /// <summary>
     /// Starts database transaction
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Trying to start new transaction withot finishing previous one
+    /// </exception>
     Task BeginTransactionAsync();
 
     /// <summary>
     /// Commits database transaction
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Trying to commit transaction without starting it
+    /// </exception>
     Task CommitTransactionAsync();
 
     /// <summary>
     /// Rolls database transaction back
     /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// Trying to rollback transaction without starting it
+    /// </exception>
     Task RollbackTransactionAsync();
 }

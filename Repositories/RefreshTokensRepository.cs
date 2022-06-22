@@ -20,14 +20,14 @@ public class RefreshTokensRepository : IRefreshTokensRepository
         CodeContract.Requires<TokenExistsException>(
             await TokenValueAvailable(token.Value),
             String.Format(
-                "Cannot add token: token with value = {0} already exists",
+                "Cannot add token: token with value={0} already exists",
                 token.Value
             )
         );
         CodeContract.Requires<TokenExpiredException>(
             token.ExpirationDate > DateTime.UtcNow,
             String.Format(
-                "Cannot add token with expiration time = {0}: token already expired",
+                "Cannot add token with expiration time={0}: token already expired",
                 token.ExpirationDate
             )
         );
@@ -54,21 +54,13 @@ public class RefreshTokensRepository : IRefreshTokensRepository
 
     public async Task DeleteTokenAsync(string tokenValue)
     {
-        // CodeContract.Requires<ArgumentOutOfRangeException>(
-        //     tokenId > 0,
-        //     String.Format(
-        //         "Cannot delete token with id={0}: id must be a positive integer",
-        //         tokenId
-        //     )
-        // );
         RefreshTokenModel? token = await GetTokenAsync(tokenValue);
 
         if (token is null)
             throw new TokenNotFoundException(
                 String.Format(
                     "Cannot delete token with value={0}: no such token",
-                    tokenValue
-                )
+                    tokenValue)
             );
 
         _context.Tokens.Remove(token!);
@@ -97,14 +89,6 @@ public class RefreshTokensRepository : IRefreshTokensRepository
 
     public Task<RefreshTokenModel?> GetTokenAsync(string tokenValue)
     {
-        // CodeContract.Requires<ArgumentOutOfRangeException>(
-        //     tokenId > 0,
-        //     String.Format(
-        //         "Cannot get token with id={0}: id must be a positive integer",
-        //         tokenId
-        //     )
-        // );
-
         return _context.Tokens.Where(t => t.Value == tokenValue).FirstOrDefaultAsync();
     }
 

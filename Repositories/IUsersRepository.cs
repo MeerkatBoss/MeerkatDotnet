@@ -1,4 +1,5 @@
 using MeerkatDotnet.Database.Models;
+using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Repositories;
 
@@ -13,7 +14,7 @@ public interface IUsersRepository
     /// <param name="userInput">Input model for a user</param>
     /// <returns>Added user</returns>
     /// <exception cref="UsernameTakenException">
-    /// Username is take by another user
+    /// Username is taken by another user
     /// </exception>
     Task<UserModel> AddUserAsync(UserModel user);
 
@@ -24,7 +25,7 @@ public interface IUsersRepository
     /// <param name="id">Id of a user</param>
     /// <returns>Existing user or <c>null</c></returns>
     /// <exception cref="ArgumentOutOfRangeException">
-    /// Provided id was not a positive integer
+    /// Provided id is not a positive integer
     /// </exception>
     Task<UserModel?> GetUserAsync(int id);
 
@@ -42,15 +43,24 @@ public interface IUsersRepository
     /// </summary>
     /// <param name="userUpdate">Update model for a user</param>
     /// <returns>Updated user</returns>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// User id is not a positive integer
+    /// </exception>
     /// <exception cref="UserNotFoundException">
     /// User with provided id does not exist
-    /// </exception> 
+    /// </exception>
+    /// <exception cref="UsernameTakenException">
+    /// Username is taken by another user
+    /// </exception>
     Task<UserModel> UpdateUserAsync(UserModel user);
 
     /// <summary>
     /// Deletes user with given id from database.
     /// </summary>
     /// <param name="id">Id of a user to delete</param>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// Provided id is not a positive integer
+    /// </exception>
     /// <exception cref="UserNotFoundException">
     /// User with provided id does not exist
     /// </exception>

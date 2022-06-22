@@ -14,6 +14,9 @@ public interface IUsersService
     /// </summary>
     /// <param name="inputModel">Input model for user</param>
     /// <returns>A pair of tokens and a user model</returns>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Provided input model contains invalid user data
+    /// </exception>
     Task<LogInResponse> SignUpUserAsync(UserInputModel inputModel);
 
     /// <summary>
@@ -21,6 +24,12 @@ public interface IUsersService
     /// </summary>
     /// <param name="request">Request containing login and password</param>
     /// <returns>A pair of tokens and a user model</returns>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Login or username contain invalid characters
+    /// </exception>
+    /// <exception cref="LoginFailedException">
+    /// No user with given login and password was found
+    /// </exception>
     Task<LogInResponse> LogInUserAsync(LogInRequest request);
 
     /// <summary>
@@ -28,6 +37,12 @@ public interface IUsersService
     /// </summary>
     /// <param name="id">Id of a user</param>
     /// <returns>User model</returns>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Provided id is not a positive integer
+    /// </exception>
+    /// <exception cref="EntityNotFoundException">
+    /// User with provided id doesn't exist
+    /// </exception>
     Task<UserOutputModel> GetUserAsync(int id);
 
     /// <summary>
@@ -35,12 +50,19 @@ public interface IUsersService
     /// </summary>
     /// <param name="updateModel">Update model for user</param>
     /// <returns>Updated user model</returns>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Id or update model aren't valid
+    /// </exception>
     Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel);
 
     /// <summary>
     /// Deletes user with specified id
     /// </summary>
     /// <param name="id">Id of a user</param>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Id is not a positive integer
+    /// or user with provided id doesn't exist
+    /// </exception>
     Task DeleteUserAsync(int id);
 
     /// <summary>
@@ -48,6 +70,9 @@ public interface IUsersService
     /// </summary>
     /// <param name="request">Request containing old pair of tokens</param>
     /// <returns>New pair of tokens</returns>
+    /// <exception cref="FluentValidation.ValidationException">
+    /// Provided tokens weren't valid
+    /// </exception>
     Task<RefreshResponse> RefreshTokens(RefreshRequest request);
 
 }
