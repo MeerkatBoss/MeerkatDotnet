@@ -1,4 +1,3 @@
-using MeerkatDotnet.Contracts;
 using MeerkatDotnet.Database;
 using MeerkatDotnet.Database.Models;
 using MeerkatDotnet.Repositories.Exceptions;
@@ -17,34 +16,26 @@ public class RefreshTokensRepository : IRefreshTokensRepository
 
     public async Task<RefreshTokenModel> AddTokenAsync(RefreshTokenModel token)
     {
-        CodeContract.Requires<TokenExistsException>(
-            await TokenValueAvailable(token.Value),
-            String.Format(
-                "Cannot add token: token with value={0} already exists",
-                token.Value
-            )
-        );
-        CodeContract.Requires<TokenExpiredException>(
-            token.ExpirationDate > DateTime.UtcNow,
-            String.Format(
-                "Cannot add token with expiration time={0}: token already expired",
-                token.ExpirationDate
-            )
-        );
-        CodeContract.Requires<ArgumentOutOfRangeException>(
-            token.UserId > 0,
-            String.Format(
-                "Cannot add token: user id={0} is not a positive integer",
-                token.UserId
-            )
-        );
-        CodeContract.Requires<UserNotFoundException>(
-            await UserExists(token.UserId),
-            String.Format(
-                "Cannot add token: user with id={0} does not exist",
-                token.UserId
-            )
-        );
+        if (!await TokenValueAvailable(token.Value))
+        {
+            throw new TokenExistsException(
+                    $"Cannot add token: token with value={token.Value} already exists");
+        }
+        if (token.IsExpired)
+        {
+            throw new TokenExpiredException(
+                    $"Cannot add token: token already expired");
+        }
+        if (token.UserId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                    $"Cannot add token: user id={token.UserId} is not a positive integer");
+        }
+        if (!await UserExists(token.UserId))
+        {
+            throw new UserNotFoundException(
+                    $"Cannot add token: user with id={token.UserId} does not exist");
+        }
 
         RefreshTokenModel addToken = token.Clone();
         await _context.Tokens.AddAsync(addToken);
@@ -58,9 +49,7 @@ public class RefreshTokensRepository : IRefreshTokensRepository
 
         if (token is null)
             throw new TokenNotFoundException(
-                String.Format(
-                    "Cannot delete token with value={0}: no such token",
-                    tokenValue)
+                $"Cannot delete token: no token with value={tokenValue} found"
             );
 
         _context.Tokens.Remove(token!);
@@ -69,20 +58,16 @@ public class RefreshTokensRepository : IRefreshTokensRepository
 
     public async Task<ICollection<RefreshTokenModel>?> GetAllTokensAsync(int userId)
     {
-        CodeContract.Requires<ArgumentOutOfRangeException>(
-            userId > 0,
-            String.Format(
-                "Cannot get tokens of user with id={0}: user id must be a positive integer",
-                userId
-            )
-        );
-        CodeContract.Requires<UserNotFoundException>(
-            await UserExists(userId),
-            String.Format(
-                "Cannot get tokens of user with id={0}: no such user",
-                userId
-            )
-        );
+        if (userId <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                    $"Cannot get tokens: user id={userId} is not a positive integer");
+        }
+        if (!await UserExists(userId))
+        {
+            throw new UserNotFoundException(
+                    $"Cannor get tokens: user with id={userId} does not exist");
+        }
 
         return await _context.Tokens.Where(t => t.UserId == userId).ToListAsync();
     }

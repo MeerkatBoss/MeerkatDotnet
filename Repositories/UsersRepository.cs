@@ -1,6 +1,5 @@
 using MeerkatDotnet.Database;
 using MeerkatDotnet.Database.Models;
-using MeerkatDotnet.Contracts;
 using Microsoft.EntityFrameworkCore;
 using MeerkatDotnet.Repositories.Exceptions;
 
@@ -17,13 +16,11 @@ public sealed class UsersRepository : IUsersRepository
 
     public async Task<UserModel> AddUserAsync(UserModel user)
     {
-        CodeContract.Requires<UsernameTakenException>(
-            await UsernameAvailable(user.Username),
-            String.Format(
-                "Cannot add user with username=\"{0}\": username is already taken",
-                user.Username
-            )
-        );
+        if(!await UsernameAvailable(user.Username))
+        {
+            throw new UsernameTakenException(
+                    $"Cannot add user: username \"{user.Username}\" is already taken");
+        }
 
         await _database.Users.AddAsync(user);
         await _database.SaveChangesAsync();
@@ -32,12 +29,12 @@ public sealed class UsersRepository : IUsersRepository
 
     public Task<UserModel?> GetUserAsync(int id)
     {
-        CodeContract.Requires<ArgumentOutOfRangeException>(
-            id > 0,
-            String.Format(
-                "Cannot get user with id={0}: id must be a positive integer",
-                id
-            ));
+        if (id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                    $"Cannot get user: id={id} is not a positive integer");
+        }
+
         return _database.Users.AsNoTracking()
             .Where(u => u.Id == id)
             .FirstOrDefaultAsync();
@@ -53,26 +50,21 @@ public sealed class UsersRepository : IUsersRepository
 
     public async Task<UserModel> UpdateUserAsync(UserModel user)
     {
-        CodeContract.Requires<ArgumentOutOfRangeException>(
-            user.Id > 0,
-            String.Format(
-                "Cannot update user with id={0}: id must be a positive integer",
-                user.Id
-            )
-        );
-        CodeContract.Requires<UserNotFoundException>(
-            await UserExists(user.Id),
-            String.Format(
-                "Cannot update user with id={0}: no such user",
-                user.Id)
-        );
-        CodeContract.Requires<UsernameTakenException>(
-            await UsernameAvailable(user.Id, user.Username),
-            String.Format(
-                "Cannot update user with username=\"{0}\": username is already taken",
-                user.Username
-            )
-        );
+        if (user.Id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                    $"Cannot update user: id={user.Id} is not a positive integer");
+        }
+        if (!await UserExists(user.Id))
+        {
+            throw new UserNotFoundException(
+                    $"Cannot update user: no user with id={user.Id} found");
+        }
+        if (!await UsernameAvailable(user.Id, user.Username))
+        {
+            throw new UsernameTakenException(
+                    $"Cannot update user: username \"{user.Username}\" is already taken");
+        }
         UserModel dbUser = (await _database.Users.FindAsync(user.Id))!;
         _database.Entry(dbUser).CurrentValues.SetValues(user);
         _database.Entry(dbUser).DetectChanges();
@@ -82,20 +74,17 @@ public sealed class UsersRepository : IUsersRepository
 
     public async Task DeleteUserAsync(int id)
     {
-        CodeContract.Requires<ArgumentOutOfRangeException>(
-            id > 0,
-            String.Format(
-                "Cannot delete user with id={0}: id must be a positive integer",
-                id
-            )
-        );
-        CodeContract.Requires<UserNotFoundException>(
-            await UserExists(id),
-            String.Format(
-                "Cannot delete user with id={0}: no such user",
-                id
-            )
-        );
+        if (id <= 0)
+        {
+            throw new ArgumentOutOfRangeException(
+                    $"Cannot delete user: id={id} is not a positive integer");
+        }
+        if (!await UserExists(id))
+        {
+            throw new UserNotFoundException(
+                    $"Cannot delete user: no user with id={id} found");
+        }
+
         UserModel user = (await _database.Users.FindAsync(id))!;
         _database.Users.Remove(user);
         await _database.SaveChangesAsync();
