@@ -34,7 +34,7 @@ public interface IUsersRepository
     /// If such user does not exist, returns <c>null</c>
     /// </summary>
     /// <param name="username">Username used for login</param>
-    /// <param name="password">Password user for login</param>
+    /// <param name="passwordHash">Hashed password used for login</param>
     /// <returns>Existing user or <c>null</c></returns>
     Task<UserModel?> LoginUserAsync(string username, string passwordHash);
 
@@ -42,7 +42,7 @@ public interface IUsersRepository
     /// Updates user in database with given update model
     /// </summary>
     /// <param name="userUpdate">Update model for a user</param>
-    /// <returns>Updated user</returns>
+    /// <returns>Updated user model</returns>
     /// <exception cref="ArgumentOutOfRangeException">
     /// User id is not a positive integer
     /// </exception>
