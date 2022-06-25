@@ -32,8 +32,8 @@ public static class UsersEndpoints
         app.MapPost($"{apiPrefix}/{endpointPrefix}/log_in", LogInUser)
             .Accepts<LogInRequest>("application/json")
             .Produces<LogInResponse>()
+            .Produces(statusCode: 401)
             .ProducesValidationProblem()
-            .ProducesProblem(statusCode: 403)
             .AllowAnonymous();
 
         app.MapPut($"{apiPrefix}/{endpointPrefix}/refresh", RefreshTokens)
@@ -44,17 +44,20 @@ public static class UsersEndpoints
 
         app.MapGet($"{apiPrefix}/{endpointPrefix}/", GetUser)
             .Produces<UserOutputModel>()
+            .Produces(statusCode: 401)
             .ProducesValidationProblem()
             .ProducesProblem(statusCode: 404)
             .RequireAuthorization();
 
         app.MapPut($"{apiPrefix}/{endpointPrefix}/", UpdateUser)
             .Produces<UserOutputModel>()
+            .Produces(statusCode: 401)
             .ProducesValidationProblem()
             .RequireAuthorization();
 
         app.MapDelete($"{apiPrefix}/{endpointPrefix}/", DeleteUser)
             .Produces(statusCode: 204)
+            .Produces(statusCode: 401)
             .ProducesValidationProblem()
             .RequireAuthorization();
 

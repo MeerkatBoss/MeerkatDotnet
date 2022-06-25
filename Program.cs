@@ -6,23 +6,20 @@ using MeerkatDotnet.Repositories;
 using MeerkatDotnet.Services;
 using MeerkatDotnet.Endpoints;
 using Microsoft.IdentityModel.Tokens;
+using MeerkatDotnet.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 
 var config = builder.Configuration;
 
-// Load JWT options from config
+// Load options from config
 JwtOptions jwtOptions = new();
 HashingOptions hashingOptions = new();
-//builder.Services.Configure<JwtOptions>(config);
 config.Bind("JwtOptions", jwtOptions);
 config.Bind("HashingOptions", hashingOptions);
 
 builder.Services.AddSingleton<JwtOptions>(jwtOptions);
 builder.Services.AddSingleton<HashingOptions>(hashingOptions);
-
-// Load hashing options from config
-//builder.Services.Configure<HashingOptions>(config);
 
 // Configure database context
 var connectionString = config.GetConnectionString("DefaultConnection");
@@ -79,6 +76,9 @@ app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapUsersEndpoints("/api/v1", "user");
+app.UseMiddleware<ValidationExceptionMiddleware>();
+app.UseMiddleware<NotFoundMiddleware>();
+app.UseMiddleware<LoginFailedMiddleware>();
 
 // Use Swagger if in development
 if (app.Environment.IsDevelopment())
