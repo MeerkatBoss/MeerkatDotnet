@@ -1,5 +1,4 @@
 using System.Text;
-using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace MeerkatDotnet.Configurations;
 
@@ -11,5 +10,14 @@ public sealed class HashingOptions
     public byte[] SaltBytes
     {
         get => Encoding.UTF8.GetBytes(Salt);
+    }
+
+    public static HashingOptions FromConfiguration(ConfigurationManager config)
+    {
+        return new()
+        {
+            Salt = config.GetValue<string>("HASH_SALT"),
+            IterationCount = config.GetValue<int>("HASH_ITERATIONS")
+        };
     }
 }

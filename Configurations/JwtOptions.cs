@@ -18,4 +18,16 @@ public sealed class JwtOptions
     {
         get => new(Encoding.UTF8.GetBytes(Key));
     }
+
+    public static JwtOptions FromConfiguration(ConfigurationManager config)
+    {
+        return new()
+        {
+            Issuer = config.GetValue<string>("JWT_ISSUER"),
+            Audience = config.GetValue<string>("JWT_AUDIENCE"),
+            Key = config.GetValue<string>("JWT_KEY"),
+            AccessTokenExpirationMinutes = config.GetValue<int>("ACCESS_LIFETIME_MINUTES"),
+            RefreshTokenExpirationDays = config.GetValue<int>("REFRESH_LIFETIME_DAYS")
+        };
+    }
 }

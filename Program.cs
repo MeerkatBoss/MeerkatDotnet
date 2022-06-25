@@ -11,18 +11,23 @@ using MeerkatDotnet.Middleware;
 var builder = WebApplication.CreateBuilder(args);
 
 var config = builder.Configuration;
+config.AddEnvironmentVariables();
 
 // Load options from config
-JwtOptions jwtOptions = new();
-HashingOptions hashingOptions = new();
-config.Bind("JwtOptions", jwtOptions);
-config.Bind("HashingOptions", hashingOptions);
+JwtOptions jwtOptions = JwtOptions.FromConfiguration(config);
+HashingOptions hashingOptions = HashingOptions.FromConfiguration(config);
 
 builder.Services.AddSingleton<JwtOptions>(jwtOptions);
 builder.Services.AddSingleton<HashingOptions>(hashingOptions);
 
 // Configure database context
-var connectionString = config.GetConnectionString("DefaultConnection");
+string db_address = config.GetValue<string>("DB_ADDRESS");
+string db_port = config.GetValue<string>("DB_PORT");
+string db_name = config.GetValue<string>("DB_NAME");
+string db_user = config.GetValue<string>("DB_USER");
+string db_password = config.GetValue<string>("DB_PASSWORD");
+string connectionString = 
+    $"Server={db_address};Port={db_port};Database={db_name};User Id={db_user};Password={db_password}";
 builder.Services.AddDbContext<AppDbContext>(
     options => options.UseNpgsql(connectionString));
 
