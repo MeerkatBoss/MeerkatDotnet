@@ -152,36 +152,26 @@ public class UsersService : IUsersService
         return updatedUser;
     }
 
-    public async Task DeleteUserAsync(int id, UserDeleteModel user)
+    public async Task DeleteUserAsync(int id, UserDeleteModel _)
     {
-        var validator = new UserDeleteModelValidator();
-        ValidationResult res = validator.Validate(user);
         if (id <= 0)
-            res.Errors.Add(new("Id", "Invalid id provided"));
-        if (!res.IsValid)
-            throw new ValidationException(res.Errors);
-        
-        UserModel? existingUser = await _context.Users.GetUserAsync(id);
-        if (existingUser is null)
         {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    "Id", $"No user with id={id} exists");
+            FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
             throw new ValidationException(new[] { failure });
         }
-
         try
         {
             await _context.BeginTransactionAsync();
             await _context.Users.DeleteUserAsync(id);
             await _context.CommitTransactionAsync();
         }
-        /*catch (UserNotFoundException)
+        catch (UserNotFoundException)
         {
             await _context.RollbackTransactionAsync();
             var failure = new FluentValidation.Results.ValidationFailure(
                     "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
-        }*/
+        }
         catch
         {
             await _context.RollbackTransactionAsync();
