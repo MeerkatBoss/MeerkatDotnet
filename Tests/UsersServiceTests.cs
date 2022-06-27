@@ -719,6 +719,28 @@ public class UsersServiceTests
         }
 
         [Test]
+        public void TestUpdateUserWrongPassword()
+        {
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash("testtest"),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            var updateModel = new UserUpdateModel(
+                    OldPassword: "test1234",
+                    Username: "test");
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
+
+            Assert.ThrowsAsync<ValidationException>(updateUser);
+        }
+
+        [Test]
         public void TestUpdateUserInvalidId()
         {
             var updateModel = new UserUpdateModel(
@@ -849,6 +871,25 @@ public class UsersServiceTests
             AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new(oldPassword));
 
             Assert.ThrowsAsync<ValidationException>(deleteUser);
+        }
+
+        [Test]
+        public void TestDeleteUserWrongPassword()
+        {
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash("testtest"),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.DeleteUserAsync(1, new("test1234"));
+
+            Assert.ThrowsAsync<ValidationException>(updateUser);
         }
 
         [Test]
