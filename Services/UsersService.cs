@@ -131,12 +131,6 @@ public class UsersService : IUsersService
                     "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
         }
-        if (existingUser.PasswordHash != GetHash(updateModel.OldPassword))
-        {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    nameof(updateModel.OldPassword), "Wrong old password provided");
-            throw new ValidationException(new[] { failure });
-        }
         var updatedUser = new UserModel(
                 username: updateModel.Username ?? existingUser!.Username,
                 passwordHash: GetHash(updateModel.Password) ?? existingUser!.PasswordHash,
@@ -174,12 +168,6 @@ public class UsersService : IUsersService
                     "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
         }
-        if (existingUser.PasswordHash != GetHash(user.OldPassword))
-        {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    nameof(user.OldPassword), "Wrong old password provided");
-            throw new ValidationException(new[] { failure });
-        }
 
         try
         {
@@ -187,6 +175,13 @@ public class UsersService : IUsersService
             await _context.Users.DeleteUserAsync(id);
             await _context.CommitTransactionAsync();
         }
+        /*catch (UserNotFoundException)
+        {
+            await _context.RollbackTransactionAsync();
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    "Id", $"No user with id={id} exists");
+            throw new ValidationException(new[] { failure });
+        }*/
         catch
         {
             await _context.RollbackTransactionAsync();
