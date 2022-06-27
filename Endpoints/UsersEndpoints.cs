@@ -3,7 +3,6 @@ using MeerkatDotnet.Models.Requests;
 using MeerkatDotnet.Models.Responses;
 using MeerkatDotnet.Services;
 using Microsoft.AspNetCore.Http.Extensions;
-using Microsoft.AspNetCore.Mvc;
 
 namespace MeerkatDotnet.Endpoints;
 
@@ -113,7 +112,7 @@ public static class UsersEndpoints
     }
 
     public static async Task<IResult> DeleteUser(
-            [FromBody] UserDeleteModel user,
+            UserDeleteModel user,
             HttpContext context,
             IUsersService usersService)
     {
