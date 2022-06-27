@@ -26,14 +26,15 @@ string db_port = config.GetValue<string>("DB_PORT");
 string db_name = config.GetValue<string>("DB_NAME");
 string db_user = config.GetValue<string>("DB_USER");
 string db_password = config.GetValue<string>("DB_PASSWORD");
-string connectionString = 
+string connectionString =
     $"Server={db_address};Port={db_port};Database={db_name};User Id={db_user};Password={db_password}";
 builder.Services.AddDbContext<AppDbContext>(
     options => options.UseNpgsql(connectionString));
 
 // Configure Swagger
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(
+        c => c.SwaggerDoc("v2", new () { Title = "MeerkatDotnet", Version = "v2"}));
 
 // Configure authorization and authentication via JWT
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -80,7 +81,7 @@ var app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapUsersEndpoints("/api/v1", "user");
+app.MapUsersEndpoints("/api/v2", "user");
 app.UseMiddleware<ValidationExceptionMiddleware>();
 app.UseMiddleware<NotFoundMiddleware>();
 app.UseMiddleware<LoginFailedMiddleware>();
@@ -89,7 +90,7 @@ app.UseMiddleware<LoginFailedMiddleware>();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v2/swagger.json", "MeerkatDotnet v2"));
 }
 
 await app.RunAsync();

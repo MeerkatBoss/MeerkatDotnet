@@ -59,6 +59,7 @@ public interface IUsersService
     /// Deletes user with specified id
     /// </summary>
     /// <param name="id">Id of a user</param>
+    /// <param name="user">Model containing user password</param>
     /// <exception cref="FluentValidation.ValidationException">
     /// Id is not a positive integer
     /// or user with provided id doesn't exist

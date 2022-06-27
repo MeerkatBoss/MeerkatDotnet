@@ -14,7 +14,6 @@ using Microsoft.IdentityModel.Tokens;
 using FluentValidation;
 using FluentValidation.Results;
 using System.Text;
-using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Services;
 
@@ -131,6 +130,12 @@ public class UsersService : IUsersService
                     "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
         }
+        if (existingUser.PasswordHash != GetHash(updateModel.OldPassword))
+        {
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    nameof(updateModel.OldPassword), "Wrong old password provided");
+            throw new ValidationException(new[] { failure });
+        }
         var updatedUser = new UserModel(
                 username: updateModel.Username ?? existingUser!.Username,
                 passwordHash: GetHash(updateModel.Password) ?? existingUser!.PasswordHash,
@@ -152,25 +157,34 @@ public class UsersService : IUsersService
         return updatedUser;
     }
 
-    public async Task DeleteUserAsync(int id, UserDeleteModel _)
+    public async Task DeleteUserAsync(int id, UserDeleteModel user)
     {
+        var validator = new UserDeleteModelValidator();
+        ValidationResult res = validator.Validate(user);
         if (id <= 0)
+            res.Errors.Add(new("Id", "Invalid id provided"));
+        if (!res.IsValid)
+            throw new ValidationException(res.Errors);
+
+        UserModel? existingUser = await _context.Users.GetUserAsync(id);
+        if (existingUser is null)
         {
-            FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
         }
+        if (existingUser.PasswordHash != GetHash(user.Password))
+        {
+            var failure = new FluentValidation.Results.ValidationFailure(
+                    nameof(user.Password), "Wrong old password provided");
+            throw new ValidationException(new[] { failure });
+        }
+
         try
         {
             await _context.BeginTransactionAsync();
             await _context.Users.DeleteUserAsync(id);
             await _context.CommitTransactionAsync();
-        }
-        catch (UserNotFoundException)
-        {
-            await _context.RollbackTransactionAsync();
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    "Id", $"No user with id={id} exists");
-            throw new ValidationException(new[] { failure });
         }
         catch
         {

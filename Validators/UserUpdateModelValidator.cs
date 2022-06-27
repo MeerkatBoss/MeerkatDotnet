@@ -9,6 +9,9 @@ public class UserUpdateModelValidator : AbstractValidator<UserUpdateModel>
     {
         RuleLevelCascadeMode = CascadeMode.Stop;
 
+        RuleFor(x => x.OldPassword)
+            .IsValidPassword();
+
         RuleFor(x => x.Username)
             .IsValidUsername()
             .When(x => x.Username is not null);
