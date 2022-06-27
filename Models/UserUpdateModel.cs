@@ -2,8 +2,9 @@ using System.ComponentModel.DataAnnotations;
 namespace MeerkatDotnet.Models;
 
 public sealed record UserUpdateModel(
-    string? Username,
-    string? Password,
-    [EmailAddress] string? Email,
-    [Phone] string? Phone
+    string OldPassword,
+    string? Username = null,
+    string? Password = null,
+    [EmailAddress] string? Email = null,
+    [Phone] string? Phone = null
 );

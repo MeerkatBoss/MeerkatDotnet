@@ -528,6 +528,7 @@ public class UsersServiceTests
         {
             // Set up
             var updateModel = new UserUpdateModel(
+                OldPassword: null!,
                 Username: username,
                 Password: password,
                 Email: email,
@@ -581,6 +582,7 @@ public class UsersServiceTests
         public void TestUpdateUserInvalidUsername(string username)
         {
             var updateModel = new UserUpdateModel(
+                    OldPassword: null!,
                     Username: username,
                     Password: null,
                     Email: null,
@@ -596,6 +598,7 @@ public class UsersServiceTests
         public void TestUpdateUserInvalidPassword(string password)
         {
             var updateModel = new UserUpdateModel(
+                    OldPassword: null!,
                     Username: null,
                     Password: password,
                     Email: null,
@@ -611,6 +614,7 @@ public class UsersServiceTests
         public void TestUpdateUserInvalidEmail(string email)
         {
             var updateModel = new UserUpdateModel(
+                    OldPassword: null!,
                     Username: null,
                     Password: null,
                     Email: email,
@@ -626,6 +630,7 @@ public class UsersServiceTests
         public void TestUpdateUserInvalidPhone(string phone)
         {
             var updateModel = new UserUpdateModel(
+                    OldPassword: null!,
                     Username: null,
                     Password: null,
                     Email: null,
@@ -641,6 +646,7 @@ public class UsersServiceTests
         public void TestUpdateUserInvalidId()
         {
             var updateModel = new UserUpdateModel(
+                    OldPassword: null!,
                     Username: "test",
                     Password: null,
                     Email: null,
@@ -673,6 +679,7 @@ public class UsersServiceTests
         public void TestUpdateUserDbException()
         {
             var updateModel = new UserUpdateModel(
+                    OldPassword: null!,
                     Username: "test",
                     Password: null,
                     Email: null,
@@ -720,7 +727,7 @@ public class UsersServiceTests
                 .Callback(() => activeTransactions--);
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            await usersService.DeleteUserAsync(userId);
+            await usersService.DeleteUserAsync(userId, null!);
 
             Assert.AreEqual(0, activeTransactions);
             _contextMock
@@ -734,7 +741,7 @@ public class UsersServiceTests
         {
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(-1);
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(-1, null!);
 
             Assert.ThrowsAsync<ValidationException>(deleteUser);
         }
@@ -750,7 +757,7 @@ public class UsersServiceTests
                 .ReturnsAsync((UserModel?) null);
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1);
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, null!);
 
             Assert.ThrowsAsync<ValidationException>(deleteUser);
         }
@@ -771,7 +778,7 @@ public class UsersServiceTests
                 .Callback(() => sequence.Add(3));
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1);
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, null!);
 
             Assert.ThrowsAsync<Exception>(deleteUser);
             var expectedSequence = new List<int>{ 1, 2, 3 };

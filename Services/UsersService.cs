@@ -152,7 +152,7 @@ public class UsersService : IUsersService
         return updatedUser;
     }
 
-    public async Task DeleteUserAsync(int id)
+    public async Task DeleteUserAsync(int id, UserDeleteModel _)
     {
         if (id <= 0)
         {

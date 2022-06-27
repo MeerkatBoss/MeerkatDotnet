@@ -63,7 +63,7 @@ public interface IUsersService
     /// Id is not a positive integer
     /// or user with provided id doesn't exist
     /// </exception>
-    Task DeleteUserAsync(int id);
+    Task DeleteUserAsync(int id, UserDeleteModel user);
 
     /// <summary>
     /// Issues a new pair of tokens based on an old one

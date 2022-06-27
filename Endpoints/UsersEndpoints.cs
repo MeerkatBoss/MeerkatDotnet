@@ -112,11 +112,12 @@ public static class UsersEndpoints
     }
 
     public static async Task<IResult> DeleteUser(
+            UserDeleteModel user,
             HttpContext context,
             IUsersService usersService)
     {
         int id = Convert.ToInt32(context.User!.Identity!.Name);
-        await usersService.DeleteUserAsync(id);
+        await usersService.DeleteUserAsync(id, user);
         return Results.NoContent();
     }
 
