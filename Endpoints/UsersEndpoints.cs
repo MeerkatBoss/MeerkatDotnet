@@ -28,51 +28,39 @@ public static class UsersEndpoints
             .Accepts<UserInputModel>("application/json")
             .Produces<LogInResponse>(statusCode: 201)
             .ProducesValidationProblem()
-            .AllowAnonymous()
-            .WithDisplayName("Sign Up")
-            .WithTags("User");
+            .AllowAnonymous();
 
         app.MapPost($"{apiPrefix}/{endpointPrefix}/log_in", LogInUser)
             .Accepts<LogInRequest>("application/json")
             .Produces<LogInResponse>()
             .Produces(statusCode: 401)
             .ProducesValidationProblem()
-            .AllowAnonymous()
-            .WithDisplayName("Log In")
-            .WithTags("User");
+            .AllowAnonymous();
 
         app.MapPut($"{apiPrefix}/{endpointPrefix}/refresh", RefreshTokens)
             .Accepts<RefreshRequest>("application/json")
             .Produces<RefreshResponse>()
             .ProducesValidationProblem()
-            .AllowAnonymous()
-            .WithDisplayName("Refresh JWT")
-            .WithTags("User");
+            .AllowAnonymous();
 
         app.MapGet($"{apiPrefix}/{endpointPrefix}/", GetUser)
             .Produces<UserOutputModel>()
             .Produces(statusCode: 401)
             .ProducesValidationProblem()
             .ProducesProblem(statusCode: 404)
-            .RequireAuthorization()
-            .WithDisplayName("Get User")
-            .WithTags("User");
+            .RequireAuthorization();
 
         app.MapPut($"{apiPrefix}/{endpointPrefix}/", UpdateUser)
             .Produces<UserOutputModel>()
             .Produces(statusCode: 401)
             .ProducesValidationProblem()
-            .RequireAuthorization()
-            .WithDisplayName("Update User")
-            .WithTags("User");
+            .RequireAuthorization();
 
         app.MapDelete($"{apiPrefix}/{endpointPrefix}/", DeleteUser)
             .Produces(statusCode: 204)
             .Produces(statusCode: 401)
             .ProducesValidationProblem()
-            .RequireAuthorization()
-            .WithDisplayName("Delete User")
-            .WithTags("User");
+            .RequireAuthorization();
 
         return app;
     }
