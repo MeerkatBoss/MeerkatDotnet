@@ -800,7 +800,7 @@ public class UsersServiceTests
                 .Callback(() => sequence.Add(3));
             _usersMock
                 .Setup(x => x.GetUserAsync(1))
-                .ReturnsAsync(new UserModel("test1", "testtest"){ Id = 1 });
+                .ReturnsAsync(new UserModel("test1", GetHash("testtest")){ Id = 1 });
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
