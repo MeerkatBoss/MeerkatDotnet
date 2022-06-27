@@ -802,6 +802,9 @@ public class UsersServiceTests
             int activeTransactions = 0;
             string oldPassword = "testtest";
             UserModel returnedUser = new("test", GetHash(oldPassword));
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             _contextMock
                 .Setup(x => x.BeginTransactionAsync())
                 .Callback(() => activeTransactions++);
@@ -868,6 +871,11 @@ public class UsersServiceTests
         public void TestDeleteUserDbException()
         {
             var sequence = new List<int>();
+            string oldPassword = "testtest";
+            UserModel returnedUser = new("test", GetHash(oldPassword));
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             _contextMock
                 .Setup(x => x.BeginTransactionAsync())
                 .Callback(() => sequence.Add(1));
