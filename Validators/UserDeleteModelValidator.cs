@@ -10,7 +10,7 @@ public class UserDeleteModelValidator : AbstractValidator<UserDeleteModel>
     {
         RuleLevelCascadeMode = CascadeMode.Stop;
 
-        RuleFor(x => x.OldPassword)
+        RuleFor(x => x.Password)
             .IsValidPassword();
     }
 

@@ -14,7 +14,6 @@ using Microsoft.IdentityModel.Tokens;
 using FluentValidation;
 using FluentValidation.Results;
 using System.Text;
-using MeerkatDotnet.Repositories.Exceptions;
 
 namespace MeerkatDotnet.Services;
 
@@ -166,7 +165,7 @@ public class UsersService : IUsersService
             res.Errors.Add(new("Id", "Invalid id provided"));
         if (!res.IsValid)
             throw new ValidationException(res.Errors);
-        
+
         UserModel? existingUser = await _context.Users.GetUserAsync(id);
         if (existingUser is null)
         {
@@ -174,10 +173,10 @@ public class UsersService : IUsersService
                     "Id", $"No user with id={id} exists");
             throw new ValidationException(new[] { failure });
         }
-        if (existingUser.PasswordHash != GetHash(user.OldPassword))
+        if (existingUser.PasswordHash != GetHash(user.Password))
         {
             var failure = new FluentValidation.Results.ValidationFailure(
-                    nameof(user.OldPassword), "Wrong old password provided");
+                    nameof(user.Password), "Wrong old password provided");
             throw new ValidationException(new[] { failure });
         }
 
