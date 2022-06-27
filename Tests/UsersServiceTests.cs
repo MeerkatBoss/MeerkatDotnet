@@ -12,6 +12,7 @@ using System.IdentityModel.Tokens.Jwt;
 using Microsoft.IdentityModel.Tokens;
 using FluentValidation;
 using MeerkatDotnet.Repositories.Exceptions;
+using Microsoft.AspNetCore.Cryptography.KeyDerivation;
 
 namespace MeerkatDotnet.Tests;
 
@@ -115,6 +116,18 @@ public class UsersServiceTests
     {
         foreach (var arg in args)
             Assert.NotNull(arg);
+    }
+
+    protected string GetHash(string password)
+    {
+        byte[] bytes = KeyDerivation.Pbkdf2(
+            password: password,
+            salt: _hashingOptions.SaltBytes,
+            prf: KeyDerivationPrf.HMACSHA256,
+            iterationCount: _hashingOptions.IterationCount,
+            numBytesRequested: 256
+        );
+        return Convert.ToBase64String(bytes);
     }
 
     [TearDown]
@@ -527,8 +540,9 @@ public class UsersServiceTests
                 [ValueSource(typeof(TestValues), nameof(TestValues.ValidPhones))] string? phone)
         {
             // Set up
+            string oldPassword = "testtest";
             var updateModel = new UserUpdateModel(
-                OldPassword: null!,
+                OldPassword: oldPassword,
                 Username: username,
                 Password: password,
                 Email: email,
@@ -536,7 +550,7 @@ public class UsersServiceTests
             );
             var returnedUser = new UserModel(
                     username: "test",
-                    passwordHash: "test",
+                    passwordHash: GetHash(oldPassword),
                     email: "test@test.com",
                     phone: "1234567")
             { Id = 1 };
@@ -578,11 +592,43 @@ public class UsersServiceTests
                 .Verify(x => x.Tokens, Times.Never());
         }
 
+        [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
+        public void TestUpdateUserInvalidOldPassword(string oldPassword)
+        {
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            var updateModel = new UserUpdateModel(
+                    OldPassword: oldPassword,
+                    Username: "test");
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
+
+            Assert.ThrowsAsync<ValidationException>(updateUser);
+        }
+
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidUsernames))]
         public void TestUpdateUserInvalidUsername(string username)
         {
+            string oldPassword = "testtest";
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             var updateModel = new UserUpdateModel(
-                    OldPassword: null!,
+                    OldPassword: oldPassword,
                     Username: username,
                     Password: null,
                     Email: null,
@@ -597,8 +643,18 @@ public class UsersServiceTests
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
         public void TestUpdateUserInvalidPassword(string password)
         {
+            string oldPassword = "testtest";
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             var updateModel = new UserUpdateModel(
-                    OldPassword: null!,
+                    OldPassword: "testtest",
                     Username: null,
                     Password: password,
                     Email: null,
@@ -613,8 +669,18 @@ public class UsersServiceTests
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidEmails))]
         public void TestUpdateUserInvalidEmail(string email)
         {
+            string oldPassword = "testtest";
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             var updateModel = new UserUpdateModel(
-                    OldPassword: null!,
+                    OldPassword: "testtest",
                     Username: null,
                     Password: null,
                     Email: email,
@@ -629,8 +695,18 @@ public class UsersServiceTests
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPhones))]
         public void TestUpdateUserInvalidPhone(string phone)
         {
+            string oldPassword = "testtest";
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             var updateModel = new UserUpdateModel(
-                    OldPassword: null!,
+                    OldPassword: "testtest",
                     Username: null,
                     Password: null,
                     Email: null,
@@ -643,10 +719,32 @@ public class UsersServiceTests
         }
 
         [Test]
+        public void TestUpdateUserWrongPassword()
+        {
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash("testtest"),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            var updateModel = new UserUpdateModel(
+                    OldPassword: "test1234",
+                    Username: "test");
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
+
+            Assert.ThrowsAsync<ValidationException>(updateUser);
+        }
+
+        [Test]
         public void TestUpdateUserInvalidId()
         {
             var updateModel = new UserUpdateModel(
-                    OldPassword: null!,
+                    OldPassword: "testtest",
                     Username: "test",
                     Password: null,
                     Email: null,
@@ -661,7 +759,12 @@ public class UsersServiceTests
         [Test]
         public void TestUpdateUserNotFound()
         {
-            var request = new UserUpdateModel("test", "testtest", null, null);
+            var request = new UserUpdateModel(
+                    OldPassword: "testtest",
+                    Username: "test",
+                    Password: "testtest",
+                    Email: null,
+                    Phone: null);
             _usersMock
                 .Setup(x => x.UpdateUserAsync(It.IsAny<UserModel>()))
                 .ThrowsAsync(new UserNotFoundException());
@@ -679,7 +782,7 @@ public class UsersServiceTests
         public void TestUpdateUserDbException()
         {
             var updateModel = new UserUpdateModel(
-                    OldPassword: null!,
+                    OldPassword: "testtest",
                     Username: "test",
                     Password: null,
                     Email: null,
@@ -697,7 +800,7 @@ public class UsersServiceTests
                 .Callback(() => sequence.Add(3));
             _usersMock
                 .Setup(x => x.GetUserAsync(1))
-                .ReturnsAsync(new UserModel("test1", "testtest"){ Id = 1 });
+                .ReturnsAsync(new UserModel("test1", GetHash("testtest")){ Id = 1 });
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
             AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
@@ -719,6 +822,11 @@ public class UsersServiceTests
         {
             int userId = 1;
             int activeTransactions = 0;
+            string oldPassword = "testtest";
+            UserModel returnedUser = new("test", GetHash(oldPassword));
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             _contextMock
                 .Setup(x => x.BeginTransactionAsync())
                 .Callback(() => activeTransactions++);
@@ -727,7 +835,7 @@ public class UsersServiceTests
                 .Callback(() => activeTransactions--);
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            await usersService.DeleteUserAsync(userId, null!);
+            await usersService.DeleteUserAsync(userId, new(oldPassword));
 
             Assert.AreEqual(0, activeTransactions);
             _contextMock
@@ -741,9 +849,47 @@ public class UsersServiceTests
         {
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(-1, null!);
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(-1, new("testtest"));
 
             Assert.ThrowsAsync<ValidationException>(deleteUser);
+        }
+
+        [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
+        public void TestDeleteUserInvalidOldPassword(string oldPassword)
+        {
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new(oldPassword));
+
+            Assert.ThrowsAsync<ValidationException>(deleteUser);
+        }
+
+        [Test]
+        public void TestDeleteUserWrongPassword()
+        {
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash("testtest"),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+
+            AsyncTestDelegate updateUser = async () => await usersService.DeleteUserAsync(1, new("test1234"));
+
+            Assert.ThrowsAsync<ValidationException>(updateUser);
         }
 
         [Test]
@@ -757,7 +903,7 @@ public class UsersServiceTests
                 .ReturnsAsync((UserModel?) null);
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, null!);
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new("testtest"));
 
             Assert.ThrowsAsync<ValidationException>(deleteUser);
         }
@@ -766,6 +912,11 @@ public class UsersServiceTests
         public void TestDeleteUserDbException()
         {
             var sequence = new List<int>();
+            string oldPassword = "testtest";
+            UserModel returnedUser = new("test", GetHash(oldPassword));
+            _usersMock
+                .Setup(x => x.GetUserAsync(1))
+                .ReturnsAsync(returnedUser);
             _contextMock
                 .Setup(x => x.BeginTransactionAsync())
                 .Callback(() => sequence.Add(1));
@@ -778,7 +929,7 @@ public class UsersServiceTests
                 .Callback(() => sequence.Add(3));
             IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
 
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, null!);
+            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new("testtest"));
 
             Assert.ThrowsAsync<Exception>(deleteUser);
             var expectedSequence = new List<int>{ 1, 2, 3 };
