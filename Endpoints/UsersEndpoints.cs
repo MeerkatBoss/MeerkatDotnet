@@ -36,7 +36,6 @@ public static class UsersEndpoints
             .Accepts<LogInRequest>("application/json")
             .Produces<LogInResponse>()
             .Produces(statusCode: 401)
-            .ProducesValidationProblem()
             .AllowAnonymous()
             .WithDisplayName("Log In")
             .WithTags("User");
@@ -52,7 +51,6 @@ public static class UsersEndpoints
         app.MapGet($"{apiPrefix}/{endpointPrefix}/", GetUser)
             .Produces<UserOutputModel>()
             .Produces(statusCode: 401)
-            .ProducesValidationProblem()
             .ProducesProblem(statusCode: 404)
             .RequireAuthorization()
             .WithDisplayName("Get User")
@@ -62,6 +60,7 @@ public static class UsersEndpoints
             .Produces<UserOutputModel>()
             .Produces(statusCode: 401)
             .ProducesValidationProblem()
+            .ProducesProblem(statusCode: 404)
             .RequireAuthorization()
             .WithDisplayName("Update User")
             .WithTags("User");
@@ -69,7 +68,7 @@ public static class UsersEndpoints
         app.MapDelete($"{apiPrefix}/{endpointPrefix}/", DeleteUser)
             .Produces(statusCode: 204)
             .Produces(statusCode: 401)
-            .ProducesValidationProblem()
+            .ProducesProblem(statusCode: 404)
             .RequireAuthorization()
             .WithDisplayName("Delete User")
             .WithTags("User");
