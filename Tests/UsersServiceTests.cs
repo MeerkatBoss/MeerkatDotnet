@@ -592,28 +592,6 @@ public class UsersServiceTests
                 .Verify(x => x.Tokens, Times.Never());
         }
 
-        [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
-        public void TestUpdateUserInvalidOldPassword(string oldPassword)
-        {
-            var returnedUser = new UserModel(
-                    username: "test",
-                    passwordHash: GetHash(oldPassword),
-                    email: "test@test.com",
-                    phone: "1234567")
-            { Id = 1 };
-            var updateModel = new UserUpdateModel(
-                    OldPassword: oldPassword,
-                    Username: "test");
-            _usersMock
-                .Setup(x => x.GetUserAsync(1))
-                .ReturnsAsync(returnedUser);
-            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
-
-            AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
-
-            Assert.ThrowsAsync<LoginFailedException>(updateUser);
-        }
-
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidUsernames))]
         public void TestUpdateUserInvalidUsername(string username)
         {
@@ -737,7 +715,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
 
-            Assert.ThrowsAsync<ValidationException>(updateUser);
+            Assert.ThrowsAsync<LoginFailedException>(updateUser);
         }
 
         [Test]
@@ -854,25 +832,6 @@ public class UsersServiceTests
             Assert.ThrowsAsync<EntityNotFoundException>(deleteUser);
         }
 
-        [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
-        public void TestDeleteUserInvalidOldPassword(string oldPassword)
-        {
-            var returnedUser = new UserModel(
-                    username: "test",
-                    passwordHash: GetHash(oldPassword),
-                    email: "test@test.com",
-                    phone: "1234567")
-            { Id = 1 };
-            _usersMock
-                .Setup(x => x.GetUserAsync(1))
-                .ReturnsAsync(returnedUser);
-            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
-
-            AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new(oldPassword));
-
-            Assert.ThrowsAsync<LoginFailedException>(deleteUser);
-        }
-
         [Test]
         public void TestDeleteUserWrongPassword()
         {
@@ -905,7 +864,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new("testtest"));
 
-            Assert.ThrowsAsync<LoginFailedException>(deleteUser);
+            Assert.ThrowsAsync<EntityNotFoundException>(deleteUser);
         }
 
         [Test]

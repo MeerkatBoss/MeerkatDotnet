@@ -80,7 +80,8 @@ public class UsersService : IUsersService
         var validator = new LogInRequestValidator();
         ValidationResult res = validator.Validate(request);
         if(!res.IsValid)
-            throw new ValidationException(res.Errors);
+            throw new LoginFailedException(
+                    $"Login for {request.Login} failed: wrong username or password");
 
         (string username, string password) = request;
         string passwordHash = GetHash(password);
@@ -103,8 +104,7 @@ public class UsersService : IUsersService
     {
         if (id <= 0)
         {
-            FluentValidation.Results.ValidationFailure failure = new("Id", "Invalid id provided");
-            throw new ValidationException(new[] { failure });
+            throw new EntityNotFoundException($"User with id={id} does not exist");
         }
         UserModel? user = await _context.Users.GetUserAsync(id);
         if (user is null)
@@ -116,25 +116,21 @@ public class UsersService : IUsersService
 
     public async Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel)
     {
+        if (id <= 0)
+            throw new EntityNotFoundException($"User with id={id} does not exist");
         var validator = new UserUpdateModelValidator();
         ValidationResult res = validator.Validate(updateModel);
-        if (id <= 0)
-            res.Errors.Add(new("Id", "Invalid id provided"));
         if (!res.IsValid)
             throw new ValidationException(res.Errors);
-
         UserModel? existingUser = await _context.Users.GetUserAsync(id);
         if (existingUser is null)
         {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    "Id", $"No user with id={id} exists");
-            throw new ValidationException(new[] { failure });
+            throw new EntityNotFoundException($"User with id={id} does not exist");
         }
         if (existingUser.PasswordHash != GetHash(updateModel.OldPassword))
         {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    nameof(updateModel.OldPassword), "Wrong old password provided");
-            throw new ValidationException(new[] { failure });
+            throw new LoginFailedException(
+                    $"Login for {existingUser.Username} failed: wrong password");
         }
         var updatedUser = new UserModel(
                 username: updateModel.Username ?? existingUser!.Username,
@@ -159,25 +155,17 @@ public class UsersService : IUsersService
 
     public async Task DeleteUserAsync(int id, UserDeleteModel user)
     {
-        var validator = new UserDeleteModelValidator();
-        ValidationResult res = validator.Validate(user);
         if (id <= 0)
-            res.Errors.Add(new("Id", "Invalid id provided"));
-        if (!res.IsValid)
-            throw new ValidationException(res.Errors);
-
+            throw new EntityNotFoundException($"User with id={id} does not exist");
         UserModel? existingUser = await _context.Users.GetUserAsync(id);
         if (existingUser is null)
         {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    "Id", $"No user with id={id} exists");
-            throw new ValidationException(new[] { failure });
+            throw new EntityNotFoundException($"User with id={id} does not exist");
         }
         if (existingUser.PasswordHash != GetHash(user.Password))
         {
-            var failure = new FluentValidation.Results.ValidationFailure(
-                    nameof(user.Password), "Wrong old password provided");
-            throw new ValidationException(new[] { failure });
+            throw new LoginFailedException(
+                    $"Login for {existingUser.Username} failed: wrong password");
         }
 
         try
