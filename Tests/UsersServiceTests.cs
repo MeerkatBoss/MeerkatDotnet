@@ -448,7 +448,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate logIn = async () => await usersService.LogInUserAsync(request);
 
-            Assert.ThrowsAsync<ValidationException>(logIn);
+            Assert.ThrowsAsync<LoginFailedException>(logIn);
         }
 
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
@@ -459,7 +459,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate logIn = async () => await usersService.LogInUserAsync(request);
 
-            Assert.ThrowsAsync<ValidationException>(logIn);
+            Assert.ThrowsAsync<LoginFailedException>(logIn);
         }
 
         [Test]
@@ -510,7 +510,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate getUser = async () => await usersService.GetUserAsync(-1);
 
-            Assert.ThrowsAsync<ValidationException>(getUser);
+            Assert.ThrowsAsync<EntityNotFoundException>(getUser);
         }
 
         [Test]
@@ -611,7 +611,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, updateModel);
 
-            Assert.ThrowsAsync<ValidationException>(updateUser);
+            Assert.ThrowsAsync<LoginFailedException>(updateUser);
         }
 
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidUsernames))]
@@ -753,7 +753,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(-1, updateModel);
 
-            Assert.ThrowsAsync<ValidationException>(updateUser);
+            Assert.ThrowsAsync<EntityNotFoundException>(updateUser);
         }
 
         [Test]
@@ -775,7 +775,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate updateUser = async () => await usersService.UpdateUserAsync(1, request);
 
-            Assert.ThrowsAsync<ValidationException>(updateUser);
+            Assert.ThrowsAsync<EntityNotFoundException>(updateUser);
         }
 
         [Test]
@@ -851,7 +851,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(-1, new("testtest"));
 
-            Assert.ThrowsAsync<ValidationException>(deleteUser);
+            Assert.ThrowsAsync<EntityNotFoundException>(deleteUser);
         }
 
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidPasswords))]
@@ -870,7 +870,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new(oldPassword));
 
-            Assert.ThrowsAsync<ValidationException>(deleteUser);
+            Assert.ThrowsAsync<LoginFailedException>(deleteUser);
         }
 
         [Test]
@@ -889,7 +889,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate updateUser = async () => await usersService.DeleteUserAsync(1, new("test1234"));
 
-            Assert.ThrowsAsync<ValidationException>(updateUser);
+            Assert.ThrowsAsync<LoginFailedException>(updateUser);
         }
 
         [Test]
@@ -905,7 +905,7 @@ public class UsersServiceTests
 
             AsyncTestDelegate deleteUser = async () => await usersService.DeleteUserAsync(1, new("testtest"));
 
-            Assert.ThrowsAsync<ValidationException>(deleteUser);
+            Assert.ThrowsAsync<LoginFailedException>(deleteUser);
         }
 
         [Test]
