@@ -24,9 +24,6 @@ public interface IUsersService
     /// </summary>
     /// <param name="request">Request containing login and password</param>
     /// <returns>A pair of tokens and a user model</returns>
-    /// <exception cref="FluentValidation.ValidationException">
-    /// Login or username contain invalid characters
-    /// </exception>
     /// <exception cref="LoginFailedException">
     /// No user with given login and password was found
     /// </exception>
@@ -37,9 +34,6 @@ public interface IUsersService
     /// </summary>
     /// <param name="id">Id of a user</param>
     /// <returns>User model</returns>
-    /// <exception cref="FluentValidation.ValidationException">
-    /// Provided id is not a positive integer
-    /// </exception>
     /// <exception cref="EntityNotFoundException">
     /// User with provided id doesn't exist
     /// </exception>
@@ -51,7 +45,13 @@ public interface IUsersService
     /// <param name="updateModel">Update model for user</param>
     /// <returns>Updated user model</returns>
     /// <exception cref="FluentValidation.ValidationException">
-    /// Id or update model aren't valid
+    /// Update model isn't valid
+    /// </exception>
+    /// <exception cref="LoginFailedException">
+    /// Wrong updateModel.OldPassword provided
+    /// </exception>
+    /// <exception cref="EntityNotFoundException">
+    /// User with provided id doesn't exist
     /// </exception>
     Task<UserOutputModel> UpdateUserAsync(int id, UserUpdateModel updateModel);
 
@@ -60,9 +60,11 @@ public interface IUsersService
     /// </summary>
     /// <param name="id">Id of a user</param>
     /// <param name="user">Model containing user password</param>
-    /// <exception cref="FluentValidation.ValidationException">
-    /// Id is not a positive integer
-    /// or user with provided id doesn't exist
+    /// <exception cref="LoginFailedException">
+    /// Wrong user.Password provided
+    /// </exception>
+    /// <exception cref="EntityNotFoundException">
+    /// User with provided id doesn't exist
     /// </exception>
     Task DeleteUserAsync(int id, UserDeleteModel user);
 
