@@ -592,6 +592,109 @@ public class UsersServiceTests
                 .Verify(x => x.Tokens, Times.Never());
         }
 
+        [Test]
+        public async Task TestUpdateUserRemoveEmail()
+        {
+            string oldPassword = "testtest";
+            var updateModel = new UserUpdateModel(
+                OldPassword: oldPassword,
+                Email: ""
+            );
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            UserModel? updatedUser = null;
+            int activeTransactions = 0;
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+            _contextMock
+                .Setup(x => x.BeginTransactionAsync())
+                .Callback(() => activeTransactions++);
+            _contextMock
+                .Setup(x => x.CommitTransactionAsync())
+                .Callback(() => activeTransactions--);
+
+            _usersMock
+                .Setup(x => x.GetUserAsync(returnedUser.Id))
+                .ReturnsAsync(returnedUser);
+            _usersMock
+                .Setup(x => x.UpdateUserAsync(It.IsAny<UserModel>()))
+                .Callback<UserModel>(m => updatedUser = m)
+                .ReturnsAsync(updatedUser!);
+
+            // Act
+            UserOutputModel response = await usersService.UpdateUserAsync(1, updateModel);
+
+            // Assert
+            Assert.AreEqual(0, activeTransactions);
+            Assert.AreEqual(1, response.Id);
+            ValidateUserModel(
+                    updatedUser,
+                    returnedUser.Username,
+                    "hash",
+                    null,
+                    returnedUser.Phone);
+            if (updateModel.Password is not null)
+                Assert.AreNotEqual(updateModel.Password, updatedUser!.PasswordHash);
+            _contextMock
+                .Verify(x => x.RollbackTransactionAsync(), Times.Never());
+            _contextMock
+                .Verify(x => x.Tokens, Times.Never());
+        }
+
+        [Test]
+        public async Task TestUpdateUserRemovePhone()
+        {
+            string oldPassword = "testtest";
+            var updateModel = new UserUpdateModel(
+                OldPassword: oldPassword,
+                Phone: ""
+            );
+            var returnedUser = new UserModel(
+                    username: "test",
+                    passwordHash: GetHash(oldPassword),
+                    email: "test@test.com",
+                    phone: "1234567")
+            { Id = 1 };
+            UserModel? updatedUser = null;
+            int activeTransactions = 0;
+            IUsersService usersService = new UsersService(_contextMock.Object, _hashingOptions, _tokenOptions);
+            _contextMock
+                .Setup(x => x.BeginTransactionAsync())
+                .Callback(() => activeTransactions++);
+            _contextMock
+                .Setup(x => x.CommitTransactionAsync())
+                .Callback(() => activeTransactions--);
+
+            _usersMock
+                .Setup(x => x.GetUserAsync(returnedUser.Id))
+                .ReturnsAsync(returnedUser);
+            _usersMock
+                .Setup(x => x.UpdateUserAsync(It.IsAny<UserModel>()))
+                .Callback<UserModel>(m => updatedUser = m)
+                .ReturnsAsync(updatedUser!);
+
+            // Act
+            UserOutputModel response = await usersService.UpdateUserAsync(1, updateModel);
+
+            // Assert
+            Assert.AreEqual(0, activeTransactions);
+            Assert.AreEqual(1, response.Id);
+            ValidateUserModel(
+                    updatedUser,
+                    returnedUser.Username,
+                    "hash",
+                    returnedUser.Email,
+                    null);
+            if (updateModel.Password is not null)
+                Assert.AreNotEqual(updateModel.Password, updatedUser!.PasswordHash);
+            _contextMock
+                .Verify(x => x.RollbackTransactionAsync(), Times.Never());
+            _contextMock
+                .Verify(x => x.Tokens, Times.Never());
+        }
         [TestCaseSource(typeof(TestValues), nameof(TestValues.InvalidUsernames))]
         public void TestUpdateUserInvalidUsername(string username)
         {
