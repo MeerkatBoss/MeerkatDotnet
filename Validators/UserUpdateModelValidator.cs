@@ -19,10 +19,10 @@ public class UserUpdateModelValidator : AbstractValidator<UserUpdateModel>
 
         RuleFor(x => x.Email)
             .IsValidEmailAddress()
-            .When(x => x.Email is not null);
+            .When(x => !String.IsNullOrEmpty(x.Email));
 
         RuleFor(x => x.Phone)
             .IsValidPhoneNumber()
-            .When(x => x.Phone is not null);
+            .When(x => !String.IsNullOrEmpty(x.Phone));
     }
 }

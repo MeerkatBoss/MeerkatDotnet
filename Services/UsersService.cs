@@ -139,6 +139,10 @@ public class UsersService : IUsersService
                 phone: CleanPhoneNumber(updateModel.Phone) ?? existingUser!.Phone
                 )
         { Id = id };
+        if (String.IsNullOrEmpty(updatedUser.Email))
+            updatedUser.Email = null;
+        if (String.IsNullOrEmpty(updatedUser.Phone))
+            updatedUser.Phone = null;
         try
         {
             await _context.BeginTransactionAsync();
